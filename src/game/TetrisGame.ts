@@ -402,7 +402,15 @@ export class TetrisGame {
 
   private setupMusic() {
     try {
-      this.backgroundMusic = new Audio('/sounds/tetris-music.mp3')
+      // Randomly select between available music tracks
+      const musicTracks = [
+        '/sounds/tetris-music.mp3',
+        '/sounds/tetris-music2.mp3'
+      ]
+      const randomTrack = musicTracks[Math.floor(Math.random() * musicTracks.length)]
+      
+      console.log('Selected music track:', randomTrack)
+      this.backgroundMusic = new Audio(randomTrack)
       this.backgroundMusic.loop = true
       this.backgroundMusic.volume = 0.6
       
