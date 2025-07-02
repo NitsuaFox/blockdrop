@@ -17,11 +17,11 @@ export interface Tetromino {
 
 export class TetrisGame {
   private app: Application
-  private gameContainer: Container
-  private boardContainer: Container
-  private uiContainer: Container
-  private particleContainer: Container
-  private particleSystem: ParticleSystem
+  private gameContainer!: Container
+  private boardContainer!: Container
+  private uiContainer!: Container
+  private particleContainer!: Container
+  private particleSystem!: ParticleSystem
   private board: number[][]
   private currentPiece: Tetromino | null = null
   private nextPiece: Tetromino | null = null
