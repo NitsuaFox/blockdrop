@@ -31,6 +31,7 @@ export class TetrisGame {
   private dropTimer = 0
   private dropInterval = 1000 // milliseconds
   private gameRunning = true
+  private backgroundMusic: HTMLAudioElement | null = null
   
   // NES Tetris dimensions
   private readonly BOARD_WIDTH = 10
@@ -89,6 +90,7 @@ export class TetrisGame {
     
     this.setupContainers()
     this.setupUI()
+    this.setupMusic()
     this.spawnNewPiece()
     this.startGameLoop()
     this.setupControls()
@@ -173,6 +175,42 @@ export class TetrisGame {
     linesText.x = 450
     linesText.y = 180
     this.uiContainer.addChild(linesText)
+
+    // Music control hint
+    const musicText = new Text('M: Toggle Music', {
+      fontSize: 16,
+      fill: 0xcccccc,
+      fontWeight: 'bold'
+    })
+    musicText.x = 450
+    musicText.y = 220
+    this.uiContainer.addChild(musicText)
+  }
+
+  private setupMusic() {
+    try {
+      this.backgroundMusic = new Audio('/sounds/tetris-music.mp3')
+      this.backgroundMusic.loop = true
+      this.backgroundMusic.volume = 0.6
+      
+      // Start music automatically (browsers may require user interaction)
+      this.backgroundMusic.play().catch(() => {
+        // If autoplay fails, music will start on first user interaction
+        console.log('Music autoplay prevented by browser - will start on user interaction')
+      })
+    } catch (error) {
+      console.log('Could not load background music:', error)
+    }
+  }
+
+  private toggleMusic() {
+    if (!this.backgroundMusic) return
+    
+    if (this.backgroundMusic.paused) {
+      this.backgroundMusic.play().catch(console.error)
+    } else {
+      this.backgroundMusic.pause()
+    }
   }
 
   private spawnNewPiece() {
@@ -316,6 +354,12 @@ export class TetrisGame {
 
   private setupControls() {
     window.addEventListener('keydown', (e) => {
+      // Music toggle works even when game is not running
+      if (e.code === 'KeyM') {
+        this.toggleMusic()
+        return
+      }
+      
       if (!this.gameRunning) return
       
       switch (e.code) {
@@ -476,6 +520,12 @@ export class TetrisGame {
   }
 
   public destroy() {
+    // Stop background music
+    if (this.backgroundMusic) {
+      this.backgroundMusic.pause()
+      this.backgroundMusic = null
+    }
+    
     this.app.stage.removeChild(this.gameContainer)
   }
 }
