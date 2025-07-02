@@ -184,6 +184,10 @@ export class TetrisGame {
       this.fillNextPieceQueue() // Initialize queue before spawning
       console.log('Spawning new piece...')
       this.spawnNewPiece()
+      console.log('Current piece after spawning:', this.currentPiece)
+      console.log('Game running state:', this.gameRunning)
+      console.log('Board container position:', this.boardContainer.x, this.boardContainer.y)
+      console.log('Board container children count:', this.boardContainer.children.length)
       console.log('Starting game loop...')
       this.startGameLoop()
       console.log('Setting up controls...')
@@ -778,8 +782,18 @@ export class TetrisGame {
   }
 
   private startGameLoop() {
+    console.log('Starting game loop...')
+    let frameCount = 0
     this.app.ticker.add(() => {
-      if (!this.gameRunning) return
+      frameCount++
+      if (frameCount === 1) {
+        console.log('First game loop frame running')
+      }
+      
+      if (!this.gameRunning) {
+        if (frameCount < 10) console.log('Game not running, skipping frame')
+        return
+      }
       
       this.dropTimer += this.app.ticker.deltaMS
       
@@ -815,58 +829,65 @@ export class TetrisGame {
       // Update audio-reactive field and border effects
       this.updateAudioReactiveEffects(frequencyData)
       
+      if (frameCount < 5) {
+        console.log('About to render frame', frameCount)
+      }
       this.render()
     })
   }
 
   private render() {
-    // Clear previous render
-    this.boardContainer.removeChildren()
-    this.drawBoard()
-    
-    // Render placed blocks with glow
-    for (let y = 0; y < this.BOARD_HEIGHT; y++) {
-      for (let x = 0; x < this.BOARD_WIDTH; x++) {
-        if (this.board[y][x]) {
-          this.drawGlowBlock(x * this.BLOCK_SIZE, y * this.BLOCK_SIZE, this.board[y][x])
-        }
-      }
-    }
-    
-    // Render ghost piece first (behind current piece)
-    if (this.ghostPiece && this.currentPiece && this.ghostPiece.y !== this.currentPiece.y) {
-      for (let y = 0; y < this.ghostPiece.shape.length; y++) {
-        for (let x = 0; x < this.ghostPiece.shape[y].length; x++) {
-          if (this.ghostPiece.shape[y][x]) {
-            const drawX = (this.ghostPiece.x + x) * this.BLOCK_SIZE
-            const drawY = (this.ghostPiece.y + y) * this.BLOCK_SIZE
-            this.drawGhostBlock(drawX, drawY, this.ghostPiece.color)
+    try {
+      // Clear previous render
+      this.boardContainer.removeChildren()
+      this.drawBoard()
+      
+      // Render placed blocks with glow
+      for (let y = 0; y < this.BOARD_HEIGHT; y++) {
+        for (let x = 0; x < this.BOARD_WIDTH; x++) {
+          if (this.board[y][x]) {
+            this.drawGlowBlock(x * this.BLOCK_SIZE, y * this.BLOCK_SIZE, this.board[y][x])
           }
         }
       }
-    }
+      
+      // Render ghost piece first (behind current piece)
+      if (this.ghostPiece && this.currentPiece && this.ghostPiece.y !== this.currentPiece.y) {
+        for (let y = 0; y < this.ghostPiece.shape.length; y++) {
+          for (let x = 0; x < this.ghostPiece.shape[y].length; x++) {
+            if (this.ghostPiece.shape[y][x]) {
+              const drawX = (this.ghostPiece.x + x) * this.BLOCK_SIZE
+              const drawY = (this.ghostPiece.y + y) * this.BLOCK_SIZE
+              this.drawGhostBlock(drawX, drawY, this.ghostPiece.color)
+            }
+          }
+        }
+      }
 
-    // Render current piece with glow
-    if (this.currentPiece) {
-      for (let y = 0; y < this.currentPiece.shape.length; y++) {
-        for (let x = 0; x < this.currentPiece.shape[y].length; x++) {
-          if (this.currentPiece.shape[y][x]) {
-            const drawX = (this.currentPiece.x + x) * this.BLOCK_SIZE
-            const drawY = (this.currentPiece.y + y) * this.BLOCK_SIZE
-            this.drawGlowBlock(drawX, drawY, this.currentPiece.color, this.currentPiece.glowColor)
+      // Render current piece with glow
+      if (this.currentPiece) {
+        for (let y = 0; y < this.currentPiece.shape.length; y++) {
+          for (let x = 0; x < this.currentPiece.shape[y].length; x++) {
+            if (this.currentPiece.shape[y][x]) {
+              const drawX = (this.currentPiece.x + x) * this.BLOCK_SIZE
+              const drawY = (this.currentPiece.y + y) * this.BLOCK_SIZE
+              this.drawGlowBlock(drawX, drawY, this.currentPiece.color, this.currentPiece.glowColor)
+            }
           }
         }
       }
+      
+      // Render background effects
+      this.backgroundEffects.render()
+      
+      // Render next piece queue
+      this.renderNextPieceQueue()
+      
+      // Render particles
+      this.particleSystem.render()
+    } catch (error) {
+      console.error('Error in render function:', error)
     }
-    
-    // Render background effects
-    this.backgroundEffects.render()
-    
-    // Render next piece queue
-    this.renderNextPieceQueue()
-    
-    // Render particles
-    this.particleSystem.render()
   }
 
   private drawGlowBlock(x: number, y: number, color: number, glowColor?: number) {
