@@ -15,77 +15,65 @@ interface Particle {
 export class ParticleSystem {
   private particles: Particle[] = []
   private container: Container
+  private readonly MAX_PARTICLES = 200 // Hard limit to prevent browser freeze
 
   constructor(container: Container) {
     this.container = container
   }
 
   public createLineExplosion(x: number, y: number, width: number, color: number) {
-    // Massive explosion particles across the width of the cleared line
-    for (let i = 0; i < 150; i++) {
+    // Check particle limit before adding new ones
+    if (this.particles.length > this.MAX_PARTICLES - 30) {
+      this.clearOldestParticles(30)
+    }
+    
+    // Much smaller explosion - only 28 particles total
+    for (let i = 0; i < 20; i++) {
       const particle: Particle = {
         x: x + Math.random() * width,
-        y: y + Math.random() * 32, // Bigger block height
-        vx: (Math.random() - 0.5) * 12,
-        vy: (Math.random() - 0.5) * 12 - 3, // More upward bias
+        y: y + Math.random() * 32,
+        vx: (Math.random() - 0.5) * 8,
+        vy: (Math.random() - 0.5) * 8 - 2,
         life: 0,
-        maxLife: 80 + Math.random() * 60,
+        maxLife: 40 + Math.random() * 20,
         color: this.getRandomParticleColor(color),
-        size: 3 + Math.random() * 6,
+        size: 2 + Math.random() * 3,
         alpha: 1
       }
       this.particles.push(particle)
     }
 
-    // Enhanced star burst effect with more particles
-    for (let i = 0; i < 16; i++) {
-      const angle = (i / 16) * Math.PI * 2
-      const speed = 5 + Math.random() * 4
+    // Small star burst effect
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2
+      const speed = 3 + Math.random() * 2
       const particle: Particle = {
         x: x + width / 2,
         y: y + 16,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         life: 0,
-        maxLife: 120,
+        maxLife: 60,
         color: 0xffffff,
-        size: 8 + Math.random() * 4,
+        size: 4,
         alpha: 1
-      }
-      this.particles.push(particle)
-    }
-
-    // Add shockwave effect
-    for (let i = 0; i < 32; i++) {
-      const angle = (i / 32) * Math.PI * 2
-      const speed = 8 + Math.random() * 3
-      const particle: Particle = {
-        x: x + width / 2,
-        y: y + 16,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        life: 0,
-        maxLife: 40,
-        color: 0x00ffff,
-        size: 2,
-        alpha: 0.8
       }
       this.particles.push(particle)
     }
   }
 
   public createBlockBreakEffect(x: number, y: number, color: number) {
-    // Create smaller explosion for individual blocks
-    for (let i = 0; i < 15; i++) {
+    // Much smaller explosion for individual blocks
+    for (let i = 0; i < 5; i++) {
       const particle: Particle = {
-        x: x + 12 + (Math.random() - 0.5) * 12,
-        y: y + 12 + (Math.random() - 0.5) * 12,
-        vx: (Math.random() - 0.5) * 6,
-        vy: (Math.random() - 0.5) * 6,
+        x: x + 16 + (Math.random() - 0.5) * 16,
+        y: y + 16 + (Math.random() - 0.5) * 16,
+        vx: (Math.random() - 0.5) * 4,
+        vy: (Math.random() - 0.5) * 4,
         life: 0,
-        maxLife: 30 + Math.random() * 20,
+        maxLife: 20 + Math.random() * 10, // Much shorter
         color: this.getRandomParticleColor(color),
-        size: 1 + Math.random() * 2,
+        size: 1 + Math.random(),
         alpha: 1
       }
       this.particles.push(particle)
@@ -93,72 +81,23 @@ export class ParticleSystem {
   }
 
   public createGlowTrail(x: number, y: number, color: number) {
-    // Create glowing trail particles for moving pieces
-    const particle: Particle = {
-      x: x + 12 + (Math.random() - 0.5) * 24,
-      y: y + 12 + (Math.random() - 0.5) * 24,
-      vx: (Math.random() - 0.5) * 2,
-      vy: Math.random() * 2 + 1,
-      life: 0,
-      maxLife: 20,
-      color: color,
-      size: 1,
-      alpha: 0.6
-    }
-    this.particles.push(particle)
-  }
-
-  public createMassiveExplosion(centerX: number, centerY: number, screenWidth: number, color: number) {
-    // Create a massive explosion that spreads across the entire screen
-    for (let i = 0; i < 300; i++) {
-      const angle = Math.random() * Math.PI * 2
-      const speed = 8 + Math.random() * 15
+    // Much less frequent trail particles
+    if (Math.random() < 0.1) { // Only 10% chance
       const particle: Particle = {
-        x: centerX + (Math.random() - 0.5) * 200,
-        y: centerY + (Math.random() - 0.5) * 100,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
+        x: x + 16 + (Math.random() - 0.5) * 32,
+        y: y + 16 + (Math.random() - 0.5) * 32,
+        vx: (Math.random() - 0.5) * 1,
+        vy: Math.random() + 0.5,
         life: 0,
-        maxLife: 120 + Math.random() * 80,
-        color: this.getRandomParticleColor(color),
-        size: 4 + Math.random() * 8,
-        alpha: 1
-      }
-      this.particles.push(particle)
-    }
-
-    // Create horizontal wave effect
-    for (let i = 0; i < 100; i++) {
-      const particle: Particle = {
-        x: Math.random() * screenWidth,
-        y: centerY + (Math.random() - 0.5) * 50,
-        vx: (Math.random() - 0.5) * 20,
-        vy: (Math.random() - 0.5) * 8,
-        life: 0,
-        maxLife: 80,
-        color: 0x00ffff,
-        size: 3 + Math.random() * 5,
-        alpha: 0.8
-      }
-      this.particles.push(particle)
-    }
-
-    // Create screen-wide sparkle shower
-    for (let i = 0; i < 150; i++) {
-      const particle: Particle = {
-        x: Math.random() * screenWidth,
-        y: centerY - 200 + Math.random() * 100,
-        vx: (Math.random() - 0.5) * 6,
-        vy: Math.random() * 8 + 2,
-        life: 0,
-        maxLife: 150,
-        color: 0xffffff,
-        size: 2 + Math.random() * 3,
-        alpha: 0.9
+        maxLife: 15, // Shorter life
+        color: color,
+        size: 1,
+        alpha: 0.5
       }
       this.particles.push(particle)
     }
   }
+
 
   public update() {
     // Update all particles
@@ -237,6 +176,11 @@ export class ParticleSystem {
       0x0000ff
     ]
     return colors[Math.floor(Math.random() * colors.length)]
+  }
+
+  private clearOldestParticles(count: number) {
+    // Remove the oldest particles to make room for new ones
+    this.particles.splice(0, Math.min(count, this.particles.length))
   }
 
   public clear() {

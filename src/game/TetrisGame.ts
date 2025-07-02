@@ -611,8 +611,8 @@ export class TetrisGame {
         this.dropTimer = 0
       }
       
-      // Add subtle glow trail for current piece
-      if (this.currentPiece && Math.random() < 0.3) {
+      // Very subtle glow trail for current piece (much less frequent)
+      if (this.currentPiece && Math.random() < 0.05) {
         for (let y = 0; y < this.currentPiece.shape.length; y++) {
           for (let x = 0; x < this.currentPiece.shape[y].length; x++) {
             if (this.currentPiece.shape[y][x]) {
