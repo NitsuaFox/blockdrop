@@ -10,6 +10,10 @@ interface Particle {
   color: number
   size: number
   alpha: number
+  rotation?: number
+  rotationSpeed?: number
+  sparkLength?: number
+  sparkWidth?: number
 }
 
 export class ParticleSystem {
@@ -27,72 +31,88 @@ export class ParticleSystem {
       this.clearOldestParticles(30)
     }
     
-    // Much smaller explosion - only 28 particles total
-    for (let i = 0; i < 20; i++) {
+    // Epic lightning spark explosion
+    for (let i = 0; i < 15; i++) {
       const particle: Particle = {
         x: x + Math.random() * width,
         y: y + Math.random() * 32,
-        vx: (Math.random() - 0.5) * 8,
-        vy: (Math.random() - 0.5) * 8 - 2,
+        vx: (Math.random() - 0.5) * 12,
+        vy: (Math.random() - 0.5) * 12 - 3,
         life: 0,
-        maxLife: 40 + Math.random() * 20,
-        color: this.getRandomParticleColor(color),
-        size: 2 + Math.random() * 3,
-        alpha: 1
+        maxLife: 30 + Math.random() * 20,
+        color: this.getLightningColor(),
+        size: 1 + Math.random() * 2,
+        alpha: 1,
+        rotation: Math.random() * Math.PI * 2,
+        rotationSpeed: (Math.random() - 0.5) * 0.3,
+        sparkLength: 8 + Math.random() * 12,
+        sparkWidth: 1 + Math.random() * 2
       }
       this.particles.push(particle)
     }
 
-    // Small star burst effect
+    // Lightning bolt burst effect
     for (let i = 0; i < 8; i++) {
       const angle = (i / 8) * Math.PI * 2
-      const speed = 3 + Math.random() * 2
+      const speed = 5 + Math.random() * 4
       const particle: Particle = {
         x: x + width / 2,
         y: y + 16,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         life: 0,
-        maxLife: 60,
+        maxLife: 40,
         color: 0xffffff,
-        size: 4,
-        alpha: 1
+        size: 2,
+        alpha: 1,
+        rotation: angle,
+        rotationSpeed: 0,
+        sparkLength: 15 + Math.random() * 10,
+        sparkWidth: 2
       }
       this.particles.push(particle)
     }
   }
 
   public createBlockBreakEffect(x: number, y: number, color: number) {
-    // Much smaller explosion for individual blocks
-    for (let i = 0; i < 5; i++) {
+    // Lightning spark break effect
+    for (let i = 0; i < 4; i++) {
       const particle: Particle = {
         x: x + 16 + (Math.random() - 0.5) * 16,
         y: y + 16 + (Math.random() - 0.5) * 16,
-        vx: (Math.random() - 0.5) * 4,
-        vy: (Math.random() - 0.5) * 4,
+        vx: (Math.random() - 0.5) * 6,
+        vy: (Math.random() - 0.5) * 6,
         life: 0,
-        maxLife: 20 + Math.random() * 10, // Much shorter
-        color: this.getRandomParticleColor(color),
-        size: 1 + Math.random(),
-        alpha: 1
+        maxLife: 15 + Math.random() * 10,
+        color: this.getLightningColor(),
+        size: 1,
+        alpha: 1,
+        rotation: Math.random() * Math.PI * 2,
+        rotationSpeed: (Math.random() - 0.5) * 0.2,
+        sparkLength: 6 + Math.random() * 8,
+        sparkWidth: 1
       }
       this.particles.push(particle)
     }
   }
 
   public createGlowTrail(x: number, y: number, color: number) {
-    // Much less frequent trail particles
-    if (Math.random() < 0.1) { // Only 10% chance
+    // Lightning spark trail
+    if (Math.random() < 0.1) {
       const particle: Particle = {
         x: x + 16 + (Math.random() - 0.5) * 32,
         y: y + 16 + (Math.random() - 0.5) * 32,
-        vx: (Math.random() - 0.5) * 1,
-        vy: Math.random() + 0.5,
+        vx: (Math.random() - 0.5) * 2,
+        vy: Math.random() * 2 + 1,
         life: 0,
-        maxLife: 15, // Shorter life
-        color: color,
+        maxLife: 12,
+        color: this.getLightningColor(),
         size: 1,
-        alpha: 0.5
+        alpha: 0.8,
+        rotation: Math.random() * Math.PI * 2,
+        rotationSpeed: (Math.random() - 0.5) * 0.1,
+        sparkLength: 4 + Math.random() * 6,
+        sparkWidth: 1
       }
       this.particles.push(particle)
     }
@@ -108,16 +128,22 @@ export class ParticleSystem {
       particle.x += particle.vx
       particle.y += particle.vy
       
+      // Update rotation for lightning sparks
+      if (particle.rotation !== undefined && particle.rotationSpeed !== undefined) {
+        particle.rotation += particle.rotationSpeed
+      }
+      
       // Apply gravity
-      particle.vy += 0.1
+      particle.vy += 0.08
       
       // Apply air resistance
-      particle.vx *= 0.98
-      particle.vy *= 0.98
+      particle.vx *= 0.99
+      particle.vy *= 0.99
       
-      // Update life
+      // Update life with flickering effect for lightning
       particle.life++
-      particle.alpha = 1 - (particle.life / particle.maxLife)
+      const lifeRatio = particle.life / particle.maxLife
+      particle.alpha = (1 - lifeRatio) * (0.8 + Math.random() * 0.4) // Flickering effect
       
       // Remove dead particles
       if (particle.life >= particle.maxLife) {
@@ -130,38 +156,86 @@ export class ParticleSystem {
     // Clear previous particles
     this.container.removeChildren()
     
-    // Render all particles with enhanced effects
+    // Render lightning sparks
     this.particles.forEach(particle => {
       const graphics = new Graphics()
       
-      // Multiple glow layers for amazing effect
-      for (let i = 4; i >= 1; i--) {
-        graphics.beginFill(particle.color, particle.alpha * 0.1 / i)
-        graphics.drawCircle(particle.x, particle.y, particle.size + i * 3)
-        graphics.endFill()
-      }
-      
-      // Bright core
-      graphics.beginFill(0xffffff, particle.alpha * 0.8)
-      graphics.drawCircle(particle.x, particle.y, particle.size * 0.3)
-      graphics.endFill()
-      
-      // Main particle with gradient effect
-      graphics.beginFill(particle.color, particle.alpha)
-      graphics.drawCircle(particle.x, particle.y, particle.size)
-      graphics.endFill()
-      
-      // Add sparkle effect for large particles
-      if (particle.size > 5) {
-        graphics.lineStyle(1, 0xffffff, particle.alpha)
-        graphics.moveTo(particle.x - particle.size, particle.y)
-        graphics.lineTo(particle.x + particle.size, particle.y)
-        graphics.moveTo(particle.x, particle.y - particle.size)
-        graphics.lineTo(particle.x, particle.y + particle.size)
+      if (particle.sparkLength && particle.sparkWidth && particle.rotation !== undefined) {
+        // Draw lightning spark
+        this.drawLightningSpark(graphics, particle)
+      } else {
+        // Draw regular particle with enhanced glow
+        this.drawGlowParticle(graphics, particle)
       }
       
       this.container.addChild(graphics)
     })
+  }
+
+  private drawLightningSpark(graphics: Graphics, particle: Particle) {
+    const length = particle.sparkLength!
+    const width = particle.sparkWidth!
+    const rotation = particle.rotation!
+    
+    // Outer glow
+    graphics.lineStyle(width + 4, particle.color, particle.alpha * 0.3)
+    const endX = particle.x + Math.cos(rotation) * length
+    const endY = particle.y + Math.sin(rotation) * length
+    graphics.moveTo(particle.x, particle.y)
+    graphics.lineTo(endX, endY)
+    
+    // Middle glow
+    graphics.lineStyle(width + 2, particle.color, particle.alpha * 0.6)
+    graphics.moveTo(particle.x, particle.y)
+    graphics.lineTo(endX, endY)
+    
+    // Bright core
+    graphics.lineStyle(width, 0xffffff, particle.alpha * 0.9)
+    graphics.moveTo(particle.x, particle.y)
+    graphics.lineTo(endX, endY)
+    
+    // Add branching sparks
+    if (Math.random() < 0.3) {
+      const branchAngle = rotation + (Math.random() - 0.5) * 1.5
+      const branchLength = length * 0.4
+      const branchEndX = endX + Math.cos(branchAngle) * branchLength
+      const branchEndY = endY + Math.sin(branchAngle) * branchLength
+      
+      graphics.lineStyle(1, particle.color, particle.alpha * 0.7)
+      graphics.moveTo(endX, endY)
+      graphics.lineTo(branchEndX, branchEndY)
+    }
+  }
+
+  private drawGlowParticle(graphics: Graphics, particle: Particle) {
+    // Multiple glow layers
+    for (let i = 3; i >= 1; i--) {
+      graphics.beginFill(particle.color, particle.alpha * 0.2 / i)
+      graphics.drawCircle(particle.x, particle.y, particle.size + i * 2)
+      graphics.endFill()
+    }
+    
+    // Bright core
+    graphics.beginFill(0xffffff, particle.alpha * 0.9)
+    graphics.drawCircle(particle.x, particle.y, particle.size * 0.5)
+    graphics.endFill()
+    
+    // Main particle
+    graphics.beginFill(particle.color, particle.alpha)
+    graphics.drawCircle(particle.x, particle.y, particle.size)
+    graphics.endFill()
+  }
+
+  private getLightningColor(): number {
+    const lightningColors = [
+      0xffffff, // Pure white
+      0x00ffff, // Electric cyan  
+      0x66ff66, // Electric green
+      0xffff66, // Electric yellow
+      0xcc99ff, // Electric purple
+      0xff6666  // Electric pink
+    ]
+    return lightningColors[Math.floor(Math.random() * lightningColors.length)]
   }
 
   private getRandomParticleColor(baseColor: number): number {

@@ -25,6 +25,7 @@ export class TetrisGame {
   private particleSystem!: ParticleSystem
   private board: number[][]
   private currentPiece: Tetromino | null = null
+  private ghostPiece: Tetromino | null = null
   private nextPiece: Tetromino | null = null
   private score = 0
   private level = 1
@@ -406,10 +407,32 @@ export class TetrisGame {
       rotation: 0
     }
     
+    // Update ghost piece
+    this.updateGhostPiece()
+    
     // Check game over
     if (this.checkCollision(this.currentPiece, 0, 0)) {
       this.gameRunning = false
       this.showGameOver()
+    }
+  }
+
+  private updateGhostPiece() {
+    if (!this.currentPiece) {
+      this.ghostPiece = null
+      return
+    }
+    
+    // Create ghost piece as copy of current piece
+    this.ghostPiece = {
+      ...this.currentPiece,
+      x: this.currentPiece.x,
+      y: this.currentPiece.y
+    }
+    
+    // Drop ghost piece to the bottom
+    while (!this.checkCollision(this.ghostPiece, 0, 1)) {
+      this.ghostPiece.y++
     }
   }
 
@@ -532,6 +555,7 @@ export class TetrisGame {
         this.currentPiece.x = testPiece.x
         this.currentPiece.y = testPiece.y
         this.currentPiece.rotation = toRotation
+        this.updateGhostPiece() // Update ghost when piece rotates
         return
       }
     }
@@ -545,6 +569,7 @@ export class TetrisGame {
     if (!this.checkCollision(this.currentPiece, dx, dy)) {
       this.currentPiece.x += dx
       this.currentPiece.y += dy
+      this.updateGhostPiece() // Update ghost when piece moves
       return true
     }
     return false
@@ -645,6 +670,19 @@ export class TetrisGame {
       }
     }
     
+    // Render ghost piece first (behind current piece)
+    if (this.ghostPiece && this.currentPiece && this.ghostPiece.y !== this.currentPiece.y) {
+      for (let y = 0; y < this.ghostPiece.shape.length; y++) {
+        for (let x = 0; x < this.ghostPiece.shape[y].length; x++) {
+          if (this.ghostPiece.shape[y][x]) {
+            const drawX = (this.ghostPiece.x + x) * this.BLOCK_SIZE
+            const drawY = (this.ghostPiece.y + y) * this.BLOCK_SIZE
+            this.drawGhostBlock(drawX, drawY, this.ghostPiece.color)
+          }
+        }
+      }
+    }
+
     // Render current piece with glow
     if (this.currentPiece) {
       for (let y = 0; y < this.currentPiece.shape.length; y++) {
@@ -667,10 +705,9 @@ export class TetrisGame {
     
     // Outer glow layers for amazing effect
     if (glowColor) {
-      // Multiple glow layers for depth
-      for (let i = 6; i >= 1; i--) {
+      for (let i = 8; i >= 1; i--) {
         const glow = new Graphics()
-        const alpha = 0.1 - (i * 0.01)
+        const alpha = 0.15 - (i * 0.015)
         glow.beginFill(glowColor, alpha)
         glow.drawRect(x - i*2, y - i*2, this.BLOCK_SIZE + i*4, this.BLOCK_SIZE + i*4)
         glow.endFill()
@@ -678,66 +715,107 @@ export class TetrisGame {
       }
     }
     
-    // Shadow/depth effect
+    // Deep shadow for 3D depth
     const shadow = new Graphics()
-    shadow.beginFill(0x000000, 0.4)
-    shadow.drawRect(x + 2, y + 2, this.BLOCK_SIZE, this.BLOCK_SIZE)
+    shadow.beginFill(0x000000, 0.6)
+    shadow.drawRect(x + 3, y + 3, this.BLOCK_SIZE, this.BLOCK_SIZE)
     shadow.endFill()
     blockContainer.addChild(shadow)
     
-    // Main block with enhanced gradient
-    const mainBlock = new Graphics()
-    mainBlock.beginFill(color)
-    mainBlock.drawRect(x, y, this.BLOCK_SIZE, this.BLOCK_SIZE)
-    mainBlock.endFill()
-    blockContainer.addChild(mainBlock)
+    // Glass base layer with transparency
+    const glassBase = new Graphics()
+    glassBase.beginFill(color, 0.85)
+    glassBase.drawRect(x, y, this.BLOCK_SIZE, this.BLOCK_SIZE)
+    glassBase.endFill()
+    blockContainer.addChild(glassBase)
     
-    // Top highlight (light reflection)
-    const topHighlight = new Graphics()
-    topHighlight.beginFill(0xffffff, 0.4)
-    topHighlight.drawRect(x + 2, y + 1, this.BLOCK_SIZE - 4, 6)
-    topHighlight.endFill()
-    blockContainer.addChild(topHighlight)
+    // Glass reflection layers
+    const topReflection = new Graphics()
+    topReflection.beginFill(0xffffff, 0.6)
+    topReflection.drawRect(x + 2, y + 1, this.BLOCK_SIZE - 4, 8)
+    topReflection.endFill()
+    blockContainer.addChild(topReflection)
     
-    // Left highlight (edge lighting)
-    const leftHighlight = new Graphics()
-    leftHighlight.beginFill(0xffffff, 0.2)
-    leftHighlight.drawRect(x + 1, y + 2, 4, this.BLOCK_SIZE - 4)
-    leftHighlight.endFill()
-    blockContainer.addChild(leftHighlight)
+    const leftReflection = new Graphics()
+    leftReflection.beginFill(0xffffff, 0.3)
+    leftReflection.drawRect(x + 1, y + 2, 6, this.BLOCK_SIZE - 4)
+    leftReflection.endFill()
+    blockContainer.addChild(leftReflection)
     
-    // Bottom shadow (depth)
+    // Specular highlight (glass shine)
+    const specular = new Graphics()
+    specular.beginFill(0xffffff, 0.8)
+    specular.drawRect(x + 3, y + 3, this.BLOCK_SIZE - 12, 3)
+    specular.endFill()
+    blockContainer.addChild(specular)
+    
+    // Glass depth shadows
     const bottomShadow = new Graphics()
-    bottomShadow.beginFill(0x000000, 0.3)
-    bottomShadow.drawRect(x + 2, y + this.BLOCK_SIZE - 4, this.BLOCK_SIZE - 4, 3)
+    bottomShadow.beginFill(0x000000, 0.4)
+    bottomShadow.drawRect(x + 2, y + this.BLOCK_SIZE - 6, this.BLOCK_SIZE - 4, 4)
     bottomShadow.endFill()
     blockContainer.addChild(bottomShadow)
     
-    // Right shadow (depth)
     const rightShadow = new Graphics()
-    rightShadow.beginFill(0x000000, 0.3)
-    rightShadow.drawRect(x + this.BLOCK_SIZE - 4, y + 2, 3, this.BLOCK_SIZE - 4)
+    rightShadow.beginFill(0x000000, 0.4)
+    rightShadow.drawRect(x + this.BLOCK_SIZE - 6, y + 2, 4, this.BLOCK_SIZE - 4)
     rightShadow.endFill()
     blockContainer.addChild(rightShadow)
     
-    // Outer border with metallic effect
+    // Crystal-like border with refraction effect
     const border = new Graphics()
-    border.lineStyle(2, 0xffffff, 0.6)
+    border.lineStyle(3, 0xffffff, 0.8)
     border.drawRect(x, y, this.BLOCK_SIZE, this.BLOCK_SIZE)
-    border.lineStyle(1, glowColor || color, 0.8)
+    border.lineStyle(1, glowColor || color, 1.0)
     border.drawRect(x + 1, y + 1, this.BLOCK_SIZE - 2, this.BLOCK_SIZE - 2)
+    border.lineStyle(1, 0xffffff, 0.5)
+    border.drawRect(x + 2, y + 2, this.BLOCK_SIZE - 4, this.BLOCK_SIZE - 4)
     blockContainer.addChild(border)
     
-    // Inner sparkle effect
-    if (Math.random() < 0.1) { // Random sparkles
+    // Animated sparkles for glass effect
+    if (Math.random() < 0.15) {
       const sparkle = new Graphics()
-      sparkle.beginFill(0xffffff, 0.8)
-      sparkle.drawCircle(x + Math.random() * this.BLOCK_SIZE, y + Math.random() * this.BLOCK_SIZE, 1)
+      sparkle.beginFill(0xffffff, 0.9)
+      const sparkleX = x + 4 + Math.random() * (this.BLOCK_SIZE - 8)
+      const sparkleY = y + 4 + Math.random() * (this.BLOCK_SIZE - 8)
+      sparkle.drawCircle(sparkleX, sparkleY, 1.5)
       sparkle.endFill()
       blockContainer.addChild(sparkle)
     }
     
     this.boardContainer.addChild(blockContainer)
+  }
+
+  private drawGhostBlock(x: number, y: number, color: number) {
+    const ghostContainer = new Container()
+    
+    // Subtle ghost outline
+    const ghostOutline = new Graphics()
+    ghostOutline.lineStyle(2, color, 0.4)
+    ghostOutline.drawRect(x + 2, y + 2, this.BLOCK_SIZE - 4, this.BLOCK_SIZE - 4)
+    ghostContainer.addChild(ghostOutline)
+    
+    // Semi-transparent fill
+    const ghostFill = new Graphics()
+    ghostFill.beginFill(color, 0.15)
+    ghostFill.drawRect(x + 3, y + 3, this.BLOCK_SIZE - 6, this.BLOCK_SIZE - 6)
+    ghostFill.endFill()
+    ghostContainer.addChild(ghostFill)
+    
+    // Dotted pattern for ghost effect
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        if ((i + j) % 2 === 0) {
+          const dot = new Graphics()
+          dot.beginFill(color, 0.3)
+          dot.drawCircle(x + 6 + i * 6, y + 6 + j * 6, 1)
+          dot.endFill()
+          ghostContainer.addChild(dot)
+        }
+      }
+    }
+    
+    this.boardContainer.addChild(ghostContainer)
   }
 
   private showGameOver() {
