@@ -12,22 +12,33 @@ export default function Home() {
   useEffect(() => {
     if (!gameRef.current) return
 
-    // Initialize PixiJS application - Fixed size like before
-    const app = new Application({
-      width: 1200,
-      height: 800,
-      backgroundColor: 0x0a0a0a,
-      antialias: true
-    })
+    console.log('Initializing PixiJS application...')
 
-    appRef.current = app
-    gameRef.current.appendChild(app.view as HTMLCanvasElement)
+    try {
+      // Initialize PixiJS application - Fixed size like before
+      const app = new Application({
+        width: 1200,
+        height: 800,
+        backgroundColor: 0x0a0a0a,
+        antialias: true
+      })
 
-    // Initialize Tetris game
-    tetrisRef.current = new TetrisGame(app)
+      console.log('PixiJS app created, adding to DOM...')
+      appRef.current = app
+      gameRef.current.appendChild(app.view as HTMLCanvasElement)
+
+      console.log('Initializing Tetris game...')
+      // Initialize Tetris game
+      tetrisRef.current = new TetrisGame(app)
+      console.log('Tetris game initialized successfully')
+
+    } catch (error) {
+      console.error('Error initializing game:', error)
+    }
 
     // Cleanup function
     return () => {
+      console.log('Cleaning up game...')
       if (tetrisRef.current) {
         tetrisRef.current.destroy()
       }

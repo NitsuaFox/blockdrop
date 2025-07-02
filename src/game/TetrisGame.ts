@@ -169,16 +169,30 @@ export class TetrisGame {
   }
 
   constructor(app: Application) {
-    this.app = app
-    this.board = Array(this.BOARD_HEIGHT).fill(null).map(() => Array(this.BOARD_WIDTH).fill(0))
-    
-    this.setupContainers()
-    this.setupUI()
-    this.setupMusic()
-    this.fillNextPieceQueue() // Initialize queue before spawning
-    this.spawnNewPiece()
-    this.startGameLoop()
-    this.setupControls()
+    try {
+      console.log('TetrisGame constructor started')
+      this.app = app
+      this.board = Array(this.BOARD_HEIGHT).fill(null).map(() => Array(this.BOARD_WIDTH).fill(0))
+      
+      console.log('Setting up containers...')
+      this.setupContainers()
+      console.log('Setting up UI...')
+      this.setupUI()
+      console.log('Setting up music...')
+      this.setupMusic()
+      console.log('Filling next piece queue...')
+      this.fillNextPieceQueue() // Initialize queue before spawning
+      console.log('Spawning new piece...')
+      this.spawnNewPiece()
+      console.log('Starting game loop...')
+      this.startGameLoop()
+      console.log('Setting up controls...')
+      this.setupControls()
+      console.log('TetrisGame constructor completed')
+    } catch (error) {
+      console.error('Error in TetrisGame constructor:', error)
+      throw error
+    }
   }
 
   private setupContainers() {
@@ -521,9 +535,21 @@ export class TetrisGame {
   }
   
   private fillNextPieceQueue() {
-    // Fill queue with 3 pieces initially
-    for (let i = 0; i < 3; i++) {
-      this.addRandomPieceToQueue()
+    try {
+      console.log('Filling next piece queue...')
+      // Initialize the array if it doesn't exist
+      if (!this.nextPieces) {
+        this.nextPieces = []
+      }
+      
+      // Fill queue with 3 pieces initially
+      for (let i = 0; i < 3; i++) {
+        this.addRandomPieceToQueue()
+      }
+      console.log('Next piece queue filled with', this.nextPieces.length, 'pieces')
+    } catch (error) {
+      console.error('Error filling next piece queue:', error)
+      throw error
     }
   }
   
