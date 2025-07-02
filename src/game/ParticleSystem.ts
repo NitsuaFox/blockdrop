@@ -108,6 +108,58 @@ export class ParticleSystem {
     this.particles.push(particle)
   }
 
+  public createMassiveExplosion(centerX: number, centerY: number, screenWidth: number, color: number) {
+    // Create a massive explosion that spreads across the entire screen
+    for (let i = 0; i < 300; i++) {
+      const angle = Math.random() * Math.PI * 2
+      const speed = 8 + Math.random() * 15
+      const particle: Particle = {
+        x: centerX + (Math.random() - 0.5) * 200,
+        y: centerY + (Math.random() - 0.5) * 100,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 0,
+        maxLife: 120 + Math.random() * 80,
+        color: this.getRandomParticleColor(color),
+        size: 4 + Math.random() * 8,
+        alpha: 1
+      }
+      this.particles.push(particle)
+    }
+
+    // Create horizontal wave effect
+    for (let i = 0; i < 100; i++) {
+      const particle: Particle = {
+        x: Math.random() * screenWidth,
+        y: centerY + (Math.random() - 0.5) * 50,
+        vx: (Math.random() - 0.5) * 20,
+        vy: (Math.random() - 0.5) * 8,
+        life: 0,
+        maxLife: 80,
+        color: 0x00ffff,
+        size: 3 + Math.random() * 5,
+        alpha: 0.8
+      }
+      this.particles.push(particle)
+    }
+
+    // Create screen-wide sparkle shower
+    for (let i = 0; i < 150; i++) {
+      const particle: Particle = {
+        x: Math.random() * screenWidth,
+        y: centerY - 200 + Math.random() * 100,
+        vx: (Math.random() - 0.5) * 6,
+        vy: Math.random() * 8 + 2,
+        life: 0,
+        maxLife: 150,
+        color: 0xffffff,
+        size: 2 + Math.random() * 3,
+        alpha: 0.9
+      }
+      this.particles.push(particle)
+    }
+  }
+
   public update() {
     // Update all particles
     for (let i = this.particles.length - 1; i >= 0; i--) {

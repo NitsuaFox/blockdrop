@@ -22,7 +22,9 @@ export class TetrisGame {
   private boardContainer!: Container
   private uiContainer!: Container
   private particleContainer!: Container
+  private fullscreenParticleContainer!: Container
   private particleSystem!: ParticleSystem
+  private fullscreenParticleSystem!: ParticleSystem
   private board: number[][]
   private currentPiece: Tetromino | null = null
   private nextPiece: Tetromino | null = null
@@ -35,10 +37,15 @@ export class TetrisGame {
   private backgroundMusic: HTMLAudioElement | null = null
   private musicWaitingForInteraction = false
   
+  // Responsive layout properties
+  private gameFieldX = 0
+  private gameFieldY = 0
+  private uiPanelX = 0
+  
   // Scaled up dimensions for better visuals
   private readonly BOARD_WIDTH = 10
   private readonly BOARD_HEIGHT = 20
-  private readonly BLOCK_SIZE = 32 // Bigger blocks
+  private BLOCK_SIZE = 32 // Will be calculated based on screen size
   
   // SRS Tetromino definitions with all 4 rotation states
   private tetrominoes = {
@@ -162,6 +169,7 @@ export class TetrisGame {
     this.app = app
     this.board = Array(this.BOARD_HEIGHT).fill(null).map(() => Array(this.BOARD_WIDTH).fill(0))
     
+    this.calculateLayout()
     this.setupContainers()
     this.setupUI()
     this.setupMusic()
@@ -170,32 +178,83 @@ export class TetrisGame {
     this.setupControls()
   }
 
+  public handleResize(width: number, height: number) {
+    this.calculateLayout()
+    this.repositionElements()
+  }
+
+  private calculateLayout() {
+    const screenWidth = this.app.screen.width
+    const screenHeight = this.app.screen.height
+    
+    // Calculate optimal game field size (like Tetris Connected)
+    const maxGameFieldHeight = Math.min(screenHeight * 0.7, 640) // Max height
+    const blockSize = Math.floor(maxGameFieldHeight / this.BOARD_HEIGHT)
+    const gameFieldWidth = this.BOARD_WIDTH * blockSize
+    const gameFieldHeight = this.BOARD_HEIGHT * blockSize
+    
+    // Center the game field
+    this.gameFieldX = (screenWidth - gameFieldWidth) / 2
+    this.gameFieldY = (screenHeight - gameFieldHeight) / 2 + 50 // Leave space for title
+    
+    // Position UI panel to the right
+    this.uiPanelX = this.gameFieldX + gameFieldWidth + 50
+    
+    // Update block size
+    this.BLOCK_SIZE = blockSize
+  }
+
+  private repositionElements() {
+    if (!this.boardContainer || !this.uiContainer) return
+    
+    // Reposition board
+    this.boardContainer.x = this.gameFieldX
+    this.boardContainer.y = this.gameFieldY
+    
+    // Reposition particle containers
+    this.particleContainer.x = this.gameFieldX
+    this.particleContainer.y = this.gameFieldY
+    
+    // Recreate UI with new positions
+    this.uiContainer.removeChildren()
+    this.setupUI()
+    
+    // Recreate title
+    this.gameContainer.removeChildAt(0) // Remove title
+    this.setupTitle()
+  }
+
   private setupContainers() {
     // Main game container
     this.gameContainer = new Container()
     this.app.stage.addChild(this.gameContainer)
     
+    // Fullscreen particle container (behind everything)
+    this.fullscreenParticleContainer = new Container()
+    this.app.stage.addChildAt(this.fullscreenParticleContainer, 0)
+    
     // Add title
     this.setupTitle()
     
-    // Board container with glow effect - centered and bigger
+    // Board container with responsive positioning
     this.boardContainer = new Container()
-    this.boardContainer.x = (this.app.screen.width - (this.BOARD_WIDTH * this.BLOCK_SIZE)) / 2
-    this.boardContainer.y = 120
+    this.boardContainer.x = this.gameFieldX
+    this.boardContainer.y = this.gameFieldY
     this.gameContainer.addChild(this.boardContainer)
     
-    // Particle container (above board)
+    // Local particle container (above board)
     this.particleContainer = new Container()
-    this.particleContainer.x = this.boardContainer.x
-    this.particleContainer.y = this.boardContainer.y
+    this.particleContainer.x = this.gameFieldX
+    this.particleContainer.y = this.gameFieldY
     this.gameContainer.addChild(this.particleContainer)
     
     // UI container
     this.uiContainer = new Container()
     this.gameContainer.addChild(this.uiContainer)
     
-    // Initialize particle system
+    // Initialize particle systems
     this.particleSystem = new ParticleSystem(this.particleContainer)
+    this.fullscreenParticleSystem = new ParticleSystem(this.fullscreenParticleContainer)
     
     this.drawBoard()
   }
@@ -268,7 +327,7 @@ export class TetrisGame {
   }
 
   private setupUI() {
-    const rightPanelX = this.boardContainer.x + (this.BOARD_WIDTH * this.BLOCK_SIZE) + 50
+    const rightPanelX = this.uiPanelX
     
     // Score display
     const scoreText = new Text('SCORE: 0', {
@@ -456,11 +515,21 @@ export class TetrisGame {
     for (let y = this.BOARD_HEIGHT - 1; y >= 0; y--) {
       if (this.board[y].every(cell => cell !== 0)) {
         clearedLines.push(y)
-        // Create line explosion effect before clearing
+        
+        // Create local line explosion effect
         this.particleSystem.createLineExplosion(
           0, 
           y * this.BLOCK_SIZE, 
           this.BOARD_WIDTH * this.BLOCK_SIZE, 
+          0xffffff
+        )
+        
+        // Create fullscreen explosion effect that spreads across entire canvas
+        const globalY = this.gameFieldY + y * this.BLOCK_SIZE
+        this.fullscreenParticleSystem.createMassiveExplosion(
+          this.app.screen.width / 2,
+          globalY,
+          this.app.screen.width,
           0xffffff
         )
         
@@ -622,8 +691,9 @@ export class TetrisGame {
         }
       }
       
-      // Update particle system
+      // Update both particle systems
       this.particleSystem.update()
+      this.fullscreenParticleSystem.update()
       
       this.render()
     })
@@ -656,8 +726,9 @@ export class TetrisGame {
       }
     }
     
-    // Render particles
+    // Render both particle systems
     this.particleSystem.render()
+    this.fullscreenParticleSystem.render()
   }
 
   private drawGlowBlock(x: number, y: number, color: number, glowColor?: number) {
