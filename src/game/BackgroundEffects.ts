@@ -293,28 +293,24 @@ export class BackgroundEffects {
     const y = shape.y
     const rotation = shape.rotation
 
-    graphics.save()
-    graphics.translate(x, y)
-    graphics.rotate(rotation)
-
     switch (shape.type) {
       case 'circle':
-        graphics.drawCircle(0, 0, size / 2)
+        graphics.drawCircle(x, y, size / 2)
         break
       case 'triangle':
-        graphics.drawPolygon([
+        graphics.drawPolygon(this.getRotatedPoints([
           new Point(0, -size / 2),
           new Point(-size / 2, size / 2),
           new Point(size / 2, size / 2)
-        ])
+        ], x, y, rotation))
         break
       case 'diamond':
-        graphics.drawPolygon([
+        graphics.drawPolygon(this.getRotatedPoints([
           new Point(0, -size / 2),
           new Point(size / 2, 0),
           new Point(0, size / 2),
           new Point(-size / 2, 0)
-        ])
+        ], x, y, rotation))
         break
       case 'hexagon':
         const hexPoints = []
@@ -325,11 +321,19 @@ export class BackgroundEffects {
             Math.sin(angle) * size / 2
           ))
         }
-        graphics.drawPolygon(hexPoints)
+        graphics.drawPolygon(this.getRotatedPoints(hexPoints, x, y, rotation))
         break
     }
+  }
 
-    graphics.restore()
+  private getRotatedPoints(points: Point[], centerX: number, centerY: number, rotation: number): Point[] {
+    return points.map(point => {
+      const cos = Math.cos(rotation)
+      const sin = Math.sin(rotation)
+      const rotatedX = point.x * cos - point.y * sin
+      const rotatedY = point.x * sin + point.y * cos
+      return new Point(centerX + rotatedX, centerY + rotatedY)
+    })
   }
 
   private renderRibbons() {
