@@ -13,6 +13,7 @@ export interface Tetromino {
   x: number
   y: number
   type: string
+  rotation: number // 0=spawn, 1=right, 2=180, 3=left
 }
 
 export class TetrisGame {
@@ -39,50 +40,122 @@ export class TetrisGame {
   private readonly BOARD_HEIGHT = 20
   private readonly BLOCK_SIZE = 32 // Bigger blocks
   
-  // Tetromino definitions with modern colors
+  // SRS Tetromino definitions with all 4 rotation states
   private tetrominoes = {
-    I: { 
-      shape: [[1,1,1,1]], 
-      color: 0x00ffff, 
+    I: {
+      shapes: [
+        // State 0 (spawn)
+        [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+        // State 1 (right)
+        [[0,0,1,0],[0,0,1,0],[0,0,1,0],[0,0,1,0]],
+        // State 2 (180)
+        [[0,0,0,0],[0,0,0,0],[1,1,1,1],[0,0,0,0]],
+        // State 3 (left)
+        [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]]
+      ],
+      color: 0x00ffff,
       glowColor: 0x66ffff,
       type: 'I'
     },
-    O: { 
-      shape: [[1,1],[1,1]], 
-      color: 0xffff00, 
+    O: {
+      shapes: [
+        // All states are the same for O piece
+        [[0,1,1,0],[0,1,1,0],[0,0,0,0],[0,0,0,0]],
+        [[0,1,1,0],[0,1,1,0],[0,0,0,0],[0,0,0,0]],
+        [[0,1,1,0],[0,1,1,0],[0,0,0,0],[0,0,0,0]],
+        [[0,1,1,0],[0,1,1,0],[0,0,0,0],[0,0,0,0]]
+      ],
+      color: 0xffff00,
       glowColor: 0xffff66,
       type: 'O'
     },
-    T: { 
-      shape: [[0,1,0],[1,1,1]], 
-      color: 0xff00ff, 
+    T: {
+      shapes: [
+        [[0,1,0,0],[1,1,1,0],[0,0,0,0],[0,0,0,0]],
+        [[0,1,0,0],[0,1,1,0],[0,1,0,0],[0,0,0,0]],
+        [[0,0,0,0],[1,1,1,0],[0,1,0,0],[0,0,0,0]],
+        [[0,1,0,0],[1,1,0,0],[0,1,0,0],[0,0,0,0]]
+      ],
+      color: 0xff00ff,
       glowColor: 0xff66ff,
       type: 'T'
     },
-    S: { 
-      shape: [[0,1,1],[1,1,0]], 
-      color: 0x00ff00, 
+    S: {
+      shapes: [
+        [[0,1,1,0],[1,1,0,0],[0,0,0,0],[0,0,0,0]],
+        [[0,1,0,0],[0,1,1,0],[0,0,1,0],[0,0,0,0]],
+        [[0,0,0,0],[0,1,1,0],[1,1,0,0],[0,0,0,0]],
+        [[1,0,0,0],[1,1,0,0],[0,1,0,0],[0,0,0,0]]
+      ],
+      color: 0x00ff00,
       glowColor: 0x66ff66,
       type: 'S'
     },
-    Z: { 
-      shape: [[1,1,0],[0,1,1]], 
-      color: 0xff0000, 
+    Z: {
+      shapes: [
+        [[1,1,0,0],[0,1,1,0],[0,0,0,0],[0,0,0,0]],
+        [[0,0,1,0],[0,1,1,0],[0,1,0,0],[0,0,0,0]],
+        [[0,0,0,0],[1,1,0,0],[0,1,1,0],[0,0,0,0]],
+        [[0,1,0,0],[1,1,0,0],[1,0,0,0],[0,0,0,0]]
+      ],
+      color: 0xff0000,
       glowColor: 0xff6666,
       type: 'Z'
     },
-    J: { 
-      shape: [[1,0,0],[1,1,1]], 
-      color: 0x0000ff, 
+    J: {
+      shapes: [
+        [[1,0,0,0],[1,1,1,0],[0,0,0,0],[0,0,0,0]],
+        [[0,1,1,0],[0,1,0,0],[0,1,0,0],[0,0,0,0]],
+        [[0,0,0,0],[1,1,1,0],[0,0,1,0],[0,0,0,0]],
+        [[0,1,0,0],[0,1,0,0],[1,1,0,0],[0,0,0,0]]
+      ],
+      color: 0x0000ff,
       glowColor: 0x6666ff,
       type: 'J'
     },
-    L: { 
-      shape: [[0,0,1],[1,1,1]], 
-      color: 0xff8000, 
+    L: {
+      shapes: [
+        [[0,0,1,0],[1,1,1,0],[0,0,0,0],[0,0,0,0]],
+        [[0,1,0,0],[0,1,0,0],[0,1,1,0],[0,0,0,0]],
+        [[0,0,0,0],[1,1,1,0],[1,0,0,0],[0,0,0,0]],
+        [[1,1,0,0],[0,1,0,0],[0,1,0,0],[0,0,0,0]]
+      ],
+      color: 0xff8000,
       glowColor: 0xffaa66,
       type: 'L'
     }
+  }
+
+  // SRS Wall Kick Data - Standard for JLSTZ pieces
+  private kickTable = {
+    // From rotation 0
+    '0->1': [[0,0], [-1,0], [-1,1], [0,-2], [-1,-2]],
+    '0->3': [[0,0], [1,0], [1,1], [0,-2], [1,-2]],
+    // From rotation 1
+    '1->0': [[0,0], [1,0], [1,-1], [0,2], [1,2]],
+    '1->2': [[0,0], [1,0], [1,-1], [0,2], [1,2]],
+    // From rotation 2
+    '2->1': [[0,0], [-1,0], [-1,1], [0,-2], [-1,-2]],
+    '2->3': [[0,0], [1,0], [1,1], [0,-2], [1,-2]],
+    // From rotation 3
+    '3->0': [[0,0], [-1,0], [-1,-1], [0,2], [-1,2]],
+    '3->2': [[0,0], [-1,0], [-1,-1], [0,2], [-1,2]]
+  }
+
+  // SRS Wall Kick Data - Special for I piece
+  private kickTableI = {
+    // From rotation 0
+    '0->1': [[0,0], [-2,0], [1,0], [-2,-1], [1,2]],
+    '0->3': [[0,0], [-1,0], [2,0], [-1,2], [2,-1]],
+    // From rotation 1
+    '1->0': [[0,0], [2,0], [-1,0], [2,1], [-1,-2]],
+    '1->2': [[0,0], [-1,0], [2,0], [-1,2], [2,-1]],
+    // From rotation 2
+    '2->1': [[0,0], [1,0], [-2,0], [1,-2], [-2,1]],
+    '2->3': [[0,0], [2,0], [-1,0], [2,1], [-1,-2]],
+    // From rotation 3
+    '3->0': [[0,0], [1,0], [-2,0], [1,-2], [-2,1]],
+    '3->2': [[0,0], [-2,0], [1,0], [-2,-1], [1,2]]
   }
 
   constructor(app: Application) {
@@ -247,7 +320,7 @@ export class TetrisGame {
     this.uiContainer.addChild(musicText)
     
     // Controls info
-    const controlsText = new Text('CONTROLS:\nArrows: Move\nZ/X: Rotate\nUp: Hard Drop', {
+    const controlsText = new Text('CONTROLS:\nArrows: Move\nZ/Space: Rotate CCW\nX: Rotate CW\nUp: Hard Drop', {
       fontSize: 16,
       fill: 0x888888,
       fontWeight: 'bold',
@@ -323,12 +396,13 @@ export class TetrisGame {
     const pieceTemplate = this.tetrominoes[randomPiece as keyof typeof this.tetrominoes]
     
     this.currentPiece = {
-      shape: pieceTemplate.shape,
+      shape: pieceTemplate.shapes[0], // Always spawn in state 0
       color: pieceTemplate.color,
       glowColor: pieceTemplate.glowColor,
-      x: Math.floor(this.BOARD_WIDTH / 2) - 1,
+      x: Math.floor(this.BOARD_WIDTH / 2) - 2, // Center in 4x4 grid
       y: 0,
-      type: pieceTemplate.type
+      type: pieceTemplate.type,
+      rotation: 0
     }
     
     // Check game over
@@ -418,19 +492,49 @@ export class TetrisGame {
     ;(children[2] as Text).text = `LINES: ${this.lines}`
   }
 
-  private rotatePiece() {
+  private rotatePiece(clockwise: boolean = true) {
     if (!this.currentPiece) return
     
-    const rotated = this.currentPiece.shape[0].map((_, i) =>
-      this.currentPiece!.shape.map(row => row[i]).reverse()
-    )
+    const oldRotation = this.currentPiece.rotation
+    const newRotation = clockwise 
+      ? (oldRotation + 1) % 4 
+      : (oldRotation + 3) % 4
     
-    const oldShape = this.currentPiece.shape
-    this.currentPiece.shape = rotated
+    this.attemptRotation(oldRotation, newRotation)
+  }
+
+  private attemptRotation(fromRotation: number, toRotation: number) {
+    if (!this.currentPiece) return
     
-    if (this.checkCollision(this.currentPiece, 0, 0)) {
-      this.currentPiece.shape = oldShape
+    const pieceTemplate = this.tetrominoes[this.currentPiece.type as keyof typeof this.tetrominoes]
+    const newShape = pieceTemplate.shapes[toRotation]
+    
+    // Get appropriate kick table
+    const kickTable = this.currentPiece.type === 'I' ? this.kickTableI : this.kickTable
+    const kickKey = `${fromRotation}->${toRotation}`
+    const kicks = kickTable[kickKey as keyof typeof kickTable] || [[0,0]]
+    
+    // Try each kick offset
+    for (const [kickX, kickY] of kicks) {
+      const testPiece: Tetromino = {
+        ...this.currentPiece,
+        shape: newShape,
+        x: this.currentPiece.x + kickX,
+        y: this.currentPiece.y + kickY,
+        rotation: toRotation
+      }
+      
+      if (!this.checkCollision(testPiece, 0, 0)) {
+        // Success! Apply the rotation and kick
+        this.currentPiece.shape = newShape
+        this.currentPiece.x = testPiece.x
+        this.currentPiece.y = testPiece.y
+        this.currentPiece.rotation = toRotation
+        return
+      }
     }
+    
+    // If we get here, rotation failed - no valid kick found
   }
 
   private movePiece(dx: number, dy: number) {
@@ -482,9 +586,11 @@ export class TetrisGame {
           this.hardDrop()
           break
         case 'KeyZ':
-        case 'KeyX':
         case 'Space':
-          this.rotatePiece()
+          this.rotatePiece(false) // Counterclockwise
+          break
+        case 'KeyX':
+          this.rotatePiece(true) // Clockwise
           break
       }
     })
