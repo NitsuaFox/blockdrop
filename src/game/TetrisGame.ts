@@ -187,25 +187,18 @@ export class TetrisGame {
     const screenWidth = this.app.screen.width
     const screenHeight = this.app.screen.height
     
-    // Calculate optimal game field size (much smaller, like real Tetris)
-    const maxGameFieldHeight = Math.min(screenHeight * 0.6, 480) // Smaller max height
-    const blockSize = Math.floor(maxGameFieldHeight / this.BOARD_HEIGHT)
+    // Keep it simple - small fixed size like classic Tetris
+    this.BLOCK_SIZE = 20 // Fixed small block size
     
-    // Ensure minimum block size for playability
-    this.BLOCK_SIZE = Math.max(blockSize, 16)
-    
-    const gameFieldWidth = this.BOARD_WIDTH * this.BLOCK_SIZE
-    const gameFieldHeight = this.BOARD_HEIGHT * this.BLOCK_SIZE
+    const gameFieldWidth = this.BOARD_WIDTH * this.BLOCK_SIZE  // 10 * 20 = 200px
+    const gameFieldHeight = this.BOARD_HEIGHT * this.BLOCK_SIZE // 20 * 20 = 400px
     
     // Center the game field
     this.gameFieldX = (screenWidth - gameFieldWidth) / 2
-    this.gameFieldY = (screenHeight - gameFieldHeight) / 2 + 30 // Leave space for title
+    this.gameFieldY = (screenHeight - gameFieldHeight) / 2
     
-    // Position UI panel to the right (with safety check)
-    this.uiPanelX = Math.min(
-      this.gameFieldX + gameFieldWidth + 30,
-      screenWidth - 200 // Ensure UI fits on screen
-    )
+    // Position UI panel to the right
+    this.uiPanelX = this.gameFieldX + gameFieldWidth + 30
   }
 
   private repositionElements() {
@@ -264,9 +257,8 @@ export class TetrisGame {
   }
 
   private setupTitle() {
-    const fontSize = Math.min(this.app.screen.width / 25, 48) // Responsive font size
     const titleText = new Text('WhatToDo.Games - BlockFall', {
-      fontSize: fontSize,
+      fontSize: 24, // Fixed reasonable size
       fill: 0xffffff,
       fontWeight: 'bold',
       dropShadow: true,
@@ -275,7 +267,7 @@ export class TetrisGame {
       dropShadowDistance: 3
     })
     titleText.x = this.app.screen.width / 2 - titleText.width / 2
-    titleText.y = Math.max(20, this.gameFieldY - 60)
+    titleText.y = this.gameFieldY - 40
     this.gameContainer.addChild(titleText)
   }
 
@@ -333,11 +325,10 @@ export class TetrisGame {
 
   private setupUI() {
     const rightPanelX = this.uiPanelX
-    const baseFontSize = Math.min(this.app.screen.width / 50, 24) // Responsive font sizes
     
     // Score display
     const scoreText = new Text('SCORE: 0', {
-      fontSize: baseFontSize,
+      fontSize: 16, // Fixed reasonable size
       fill: 0xffffff,
       fontWeight: 'bold',
       dropShadow: true,
@@ -345,12 +336,12 @@ export class TetrisGame {
       dropShadowBlur: 10
     })
     scoreText.x = rightPanelX
-    scoreText.y = this.gameFieldY + 50
+    scoreText.y = this.gameFieldY + 20
     this.uiContainer.addChild(scoreText)
     
     // Level display
     const levelText = new Text('LEVEL: 1', {
-      fontSize: baseFontSize,
+      fontSize: 16,
       fill: 0xffffff,
       fontWeight: 'bold',
       dropShadow: true,
@@ -358,12 +349,12 @@ export class TetrisGame {
       dropShadowBlur: 10
     })
     levelText.x = rightPanelX
-    levelText.y = this.gameFieldY + 100
+    levelText.y = this.gameFieldY + 60
     this.uiContainer.addChild(levelText)
     
     // Lines display
     const linesText = new Text('LINES: 0', {
-      fontSize: baseFontSize,
+      fontSize: 16,
       fill: 0xffffff,
       fontWeight: 'bold',
       dropShadow: true,
@@ -371,28 +362,28 @@ export class TetrisGame {
       dropShadowBlur: 10
     })
     linesText.x = rightPanelX
-    linesText.y = this.gameFieldY + 150
+    linesText.y = this.gameFieldY + 100
     this.uiContainer.addChild(linesText)
 
     // Music control hint
     const musicText = new Text('M: Toggle Music', {
-      fontSize: baseFontSize * 0.7,
+      fontSize: 12,
       fill: 0xcccccc,
       fontWeight: 'bold'
     })
     musicText.x = rightPanelX
-    musicText.y = this.gameFieldY + 200
+    musicText.y = this.gameFieldY + 140
     this.uiContainer.addChild(musicText)
     
     // Controls info
     const controlsText = new Text('CONTROLS:\nArrows: Move\nZ/Space: Rotate CCW\nX: Rotate CW\nUp: Hard Drop', {
-      fontSize: baseFontSize * 0.6,
+      fontSize: 10,
       fill: 0x888888,
       fontWeight: 'bold',
-      lineHeight: baseFontSize * 0.8
+      lineHeight: 12
     })
     controlsText.x = rightPanelX
-    controlsText.y = this.gameFieldY + 250
+    controlsText.y = this.gameFieldY + 170
     this.uiContainer.addChild(controlsText)
   }
 
