@@ -1,5 +1,6 @@
 import { Application, Graphics, Container, Text, Ticker } from 'pixi.js'
 import { ParticleSystem } from './ParticleSystem'
+import { AudioAnalyzer } from './AudioAnalyzer'
 
 export interface Position {
   x: number
@@ -22,7 +23,9 @@ export class TetrisGame {
   private boardContainer!: Container
   private uiContainer!: Container
   private particleContainer!: Container
+  private backgroundEffectsContainer!: Container
   private particleSystem!: ParticleSystem
+  private audioAnalyzer!: AudioAnalyzer
   private board: number[][]
   private currentPiece: Tetromino | null = null
   private ghostPiece: Tetromino | null = null
@@ -35,6 +38,8 @@ export class TetrisGame {
   private gameRunning = true
   private backgroundMusic: HTMLAudioElement | null = null
   private musicWaitingForInteraction = false
+  private gameFieldBackground!: Graphics
+  private gameBorder!: Graphics
   
   // Responsive layout properties
   // Scaled up dimensions for better visuals  
@@ -186,6 +191,18 @@ export class TetrisGame {
     this.boardContainer.y = 120
     this.gameContainer.addChild(this.boardContainer)
     
+    // Background effects container (behind board)
+    this.backgroundEffectsContainer = new Container()
+    this.gameContainer.addChild(this.backgroundEffectsContainer)
+    
+    // Setup game field background for audio reactivity
+    this.gameFieldBackground = new Graphics()
+    this.backgroundEffectsContainer.addChild(this.gameFieldBackground)
+    
+    // Setup game border for audio reactivity
+    this.gameBorder = new Graphics()
+    this.backgroundEffectsContainer.addChild(this.gameBorder)
+    
     // Particle container (above board)
     this.particleContainer = new Container()
     this.particleContainer.x = this.boardContainer.x
@@ -198,6 +215,9 @@ export class TetrisGame {
     
     // Initialize particle system
     this.particleSystem = new ParticleSystem(this.particleContainer)
+    
+    // Initialize audio analyzer
+    this.audioAnalyzer = new AudioAnalyzer()
     
     this.drawBoard()
   }
@@ -346,6 +366,9 @@ export class TetrisGame {
         this.setupAutoplayWorkaround()
         this.updateMusicUI()
       })
+      
+      // Connect audio analyzer to music for frequency analysis
+      this.audioAnalyzer.connect(this.backgroundMusic)
     } catch (error) {
       console.log('Could not load background music:', error)
     }
@@ -652,6 +675,9 @@ export class TetrisGame {
       // Update particle system
       this.particleSystem.update()
       
+      // Update audio-reactive effects
+      this.updateAudioReactiveEffects()
+      
       this.render()
     })
   }
@@ -860,11 +886,95 @@ export class TetrisGame {
     this.spawnNewPiece()
   }
 
+  private updateAudioReactiveEffects() {
+    const frequencyData = this.audioAnalyzer.getFrequencyData()
+    if (!frequencyData) return
+    
+    // Update game field background pulsing with overall music intensity
+    this.updateGameFieldBackground(frequencyData.overall)
+    
+    // Update border effects with different frequency bands
+    this.updateGameBorder(frequencyData.bass, frequencyData.mid, frequencyData.treble)
+  }
+  
+  private updateGameFieldBackground(intensity: number) {
+    this.gameFieldBackground.clear()
+    
+    // Create pulsing background behind the game field
+    const pulse = 0.3 + intensity * 0.7 // Range: 0.3 to 1.0
+    const alpha = 0.05 + intensity * 0.15 // Very subtle, range: 0.05 to 0.2
+    
+    // Gradient background that pulses with music
+    const bgWidth = this.BOARD_WIDTH * this.BLOCK_SIZE + 40
+    const bgHeight = this.BOARD_HEIGHT * this.BLOCK_SIZE + 40
+    const centerX = this.boardContainer.x + (this.BOARD_WIDTH * this.BLOCK_SIZE) / 2
+    const centerY = this.boardContainer.y + (this.BOARD_HEIGHT * this.BLOCK_SIZE) / 2
+    
+    // Create radial gradient effect
+    for (let i = 8; i >= 1; i--) {
+      const size = (bgWidth / 2) * pulse * (i / 8)
+      const layerAlpha = alpha * (0.8 - i * 0.1)
+      
+      this.gameFieldBackground.beginFill(0x001133, layerAlpha)
+      this.gameFieldBackground.drawCircle(centerX, centerY, size)
+      this.gameFieldBackground.endFill()
+    }
+  }
+  
+  private updateGameBorder(bass: number, mid: number, treble: number) {
+    this.gameBorder.clear()
+    
+    const boardX = this.boardContainer.x
+    const boardY = this.boardContainer.y
+    const boardWidth = this.BOARD_WIDTH * this.BLOCK_SIZE
+    const boardHeight = this.BOARD_HEIGHT * this.BLOCK_SIZE
+    
+    // Bass - thick outer glow (red-orange)
+    if (bass > 0.1) {
+      const bassIntensity = bass * 0.8
+      const bassColor = 0xff4400
+      this.gameBorder.lineStyle(12 * bassIntensity, bassColor, 0.3 * bassIntensity)
+      this.gameBorder.drawRect(boardX - 15, boardY - 15, boardWidth + 30, boardHeight + 30)
+    }
+    
+    // Mid - medium border (cyan-blue)
+    if (mid > 0.1) {
+      const midIntensity = mid * 0.9
+      const midColor = 0x00aaff
+      this.gameBorder.lineStyle(8 * midIntensity, midColor, 0.5 * midIntensity)
+      this.gameBorder.drawRect(boardX - 10, boardY - 10, boardWidth + 20, boardHeight + 20)
+    }
+    
+    // Treble - thin inner sparkle (white-yellow)
+    if (treble > 0.1) {
+      const trebleIntensity = treble * 1.0
+      const trebleColor = 0xffffaa
+      this.gameBorder.lineStyle(4 * trebleIntensity, trebleColor, 0.7 * trebleIntensity)
+      this.gameBorder.drawRect(boardX - 5, boardY - 5, boardWidth + 10, boardHeight + 10)
+      
+      // Add sparkle effects on high treble
+      if (treble > 0.6) {
+        for (let i = 0; i < 4; i++) {
+          const sparkleX = boardX + Math.random() * boardWidth
+          const sparkleY = boardY + Math.random() * boardHeight
+          this.gameBorder.beginFill(0xffffff, trebleIntensity * 0.8)
+          this.gameBorder.drawCircle(sparkleX, sparkleY, 2 + Math.random() * 3)
+          this.gameBorder.endFill()
+        }
+      }
+    }
+  }
+
   public destroy() {
     // Stop background music
     if (this.backgroundMusic) {
       this.backgroundMusic.pause()
       this.backgroundMusic = null
+    }
+    
+    // Disconnect audio analyzer
+    if (this.audioAnalyzer) {
+      this.audioAnalyzer.disconnect()
     }
     
     this.app.stage.removeChild(this.gameContainer)
