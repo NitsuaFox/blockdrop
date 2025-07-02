@@ -175,6 +175,7 @@ export class TetrisGame {
     this.setupContainers()
     this.setupUI()
     this.setupMusic()
+    this.fillNextPieceQueue() // Initialize queue before spawning
     this.spawnNewPiece()
     this.startGameLoop()
     this.setupControls()
@@ -464,12 +465,37 @@ export class TetrisGame {
 
   private spawnNewPiece() {
     // Initialize queue if empty
-    if (this.nextPieces.length === 0) {
+    if (!this.nextPieces || this.nextPieces.length === 0) {
       this.fillNextPieceQueue()
     }
     
     // Get next piece from queue
-    const nextPiece = this.nextPieces.shift()!
+    const nextPiece = this.nextPieces.shift()
+    if (!nextPiece) {
+      // Fallback to direct generation if queue is somehow empty
+      const pieces = Object.keys(this.tetrominoes)
+      const randomPiece = pieces[Math.floor(Math.random() * pieces.length)]
+      const pieceTemplate = this.tetrominoes[randomPiece as keyof typeof this.tetrominoes]
+      
+      this.currentPiece = {
+        shape: pieceTemplate.shapes[0],
+        color: pieceTemplate.color,
+        glowColor: pieceTemplate.glowColor,
+        x: Math.floor(this.BOARD_WIDTH / 2) - 2,
+        y: 0,
+        type: pieceTemplate.type,
+        rotation: 0
+      }
+      
+      this.fillNextPieceQueue()
+      this.updateGhostPiece()
+      
+      if (this.checkCollision(this.currentPiece, 0, 0)) {
+        this.gameRunning = false
+        this.showGameOver()
+      }
+      return
+    }
     
     this.currentPiece = {
       shape: nextPiece.shape,
@@ -1058,6 +1084,11 @@ export class TetrisGame {
   private renderNextPieceQueue() {
     // Clear previous renders
     this.nextPieceContainer.removeChildren()
+    
+    // Safety check for nextPieces array
+    if (!this.nextPieces || this.nextPieces.length === 0) {
+      return
+    }
     
     // Get frequency data for music reactivity
     const frequencyData = this.audioAnalyzer.getFrequencyData()
