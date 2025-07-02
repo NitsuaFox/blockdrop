@@ -204,14 +204,14 @@ export class TetrisGame {
     this.gameContainer = new Container()
     this.app.stage.addChild(this.gameContainer)
     
-    // Add title
-    this.setupTitle()
-    
     // Board container - centered like before
     this.boardContainer = new Container()
     this.boardContainer.x = (this.app.screen.width - (this.BOARD_WIDTH * this.BLOCK_SIZE)) / 2
     this.boardContainer.y = 120
     this.gameContainer.addChild(this.boardContainer)
+    
+    // Add title (after board container is created)
+    this.setupTitle()
     
     // Background effects container (behind board)
     this.backgroundEffectsContainer = new Container()
