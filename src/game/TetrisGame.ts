@@ -32,6 +32,7 @@ export class TetrisGame {
   private dropInterval = 1000 // milliseconds
   private gameRunning = true
   private backgroundMusic: HTMLAudioElement | null = null
+  private musicWaitingForInteraction = false
   
   // NES Tetris dimensions
   private readonly BOARD_WIDTH = 10
@@ -193,13 +194,46 @@ export class TetrisGame {
       this.backgroundMusic.loop = true
       this.backgroundMusic.volume = 0.6
       
-      // Start music automatically (browsers may require user interaction)
+      // Try to start music immediately
       this.backgroundMusic.play().catch(() => {
-        // If autoplay fails, music will start on first user interaction
-        console.log('Music autoplay prevented by browser - will start on user interaction')
+        // If autoplay fails, start music on ANY user interaction
+        this.musicWaitingForInteraction = true
+        this.setupAutoplayWorkaround()
+        this.updateMusicUI()
       })
     } catch (error) {
       console.log('Could not load background music:', error)
+    }
+  }
+
+  private setupAutoplayWorkaround() {
+    const startMusic = () => {
+      if (this.backgroundMusic && this.backgroundMusic.paused) {
+        this.backgroundMusic.play().catch(console.error)
+        this.musicWaitingForInteraction = false
+        this.updateMusicUI()
+        // Remove listeners after music starts
+        document.removeEventListener('keydown', startMusic)
+        document.removeEventListener('click', startMusic)
+        document.removeEventListener('touchstart', startMusic)
+      }
+    }
+
+    // Start music on any user interaction
+    document.addEventListener('keydown', startMusic)
+    document.addEventListener('click', startMusic) 
+    document.addEventListener('touchstart', startMusic)
+  }
+
+  private updateMusicUI() {
+    // Update the music control text based on state
+    const musicText = this.uiContainer.children[3] as Text
+    if (this.musicWaitingForInteraction) {
+      musicText.text = '🎵 Press any key for music'
+      musicText.style.fill = 0xffff00 // Yellow to grab attention
+    } else {
+      musicText.text = 'M: Toggle Music'
+      musicText.style.fill = 0xcccccc
     }
   }
 
