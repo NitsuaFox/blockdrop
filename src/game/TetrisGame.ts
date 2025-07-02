@@ -1,6 +1,7 @@
 import { Application, Graphics, Container, Text, Ticker } from 'pixi.js'
 import { ParticleSystem } from './ParticleSystem'
 import { AudioAnalyzer } from './AudioAnalyzer'
+import { BackgroundEffects } from './BackgroundEffects'
 
 export interface Position {
   x: number
@@ -26,6 +27,7 @@ export class TetrisGame {
   private backgroundEffectsContainer!: Container
   private particleSystem!: ParticleSystem
   private audioAnalyzer!: AudioAnalyzer
+  private backgroundEffects!: BackgroundEffects
   private board: number[][]
   private currentPiece: Tetromino | null = null
   private ghostPiece: Tetromino | null = null
@@ -218,6 +220,9 @@ export class TetrisGame {
     
     // Initialize audio analyzer
     this.audioAnalyzer = new AudioAnalyzer()
+    
+    // Initialize background effects
+    this.backgroundEffects = new BackgroundEffects(this.backgroundEffectsContainer, this.app.screen.width, this.app.screen.height)
     
     this.drawBoard()
   }
@@ -694,8 +699,14 @@ export class TetrisGame {
       // Update particle system
       this.particleSystem.update()
       
-      // Update audio-reactive effects
-      this.updateAudioReactiveEffects()
+      // Get frequency data for audio-reactive effects
+      const frequencyData = this.audioAnalyzer.getFrequencyData()
+      
+      // Update background effects
+      this.backgroundEffects.update(frequencyData)
+      
+      // Update audio-reactive field and border effects
+      this.updateAudioReactiveEffects(frequencyData)
       
       this.render()
     })
@@ -740,6 +751,9 @@ export class TetrisGame {
         }
       }
     }
+    
+    // Render background effects
+    this.backgroundEffects.render()
     
     // Render particles
     this.particleSystem.render()
@@ -905,8 +919,7 @@ export class TetrisGame {
     this.spawnNewPiece()
   }
 
-  private updateAudioReactiveEffects() {
-    const frequencyData = this.audioAnalyzer.getFrequencyData()
+  private updateAudioReactiveEffects(frequencyData: { bass: number; mid: number; treble: number; overall: number } | null) {
     if (!frequencyData) return
     
     // Update game field background pulsing with overall music intensity
@@ -994,6 +1007,11 @@ export class TetrisGame {
     // Disconnect audio analyzer
     if (this.audioAnalyzer) {
       this.audioAnalyzer.disconnect()
+    }
+    
+    // Clear background effects
+    if (this.backgroundEffects) {
+      this.backgroundEffects.clear()
     }
     
     this.app.stage.removeChild(this.gameContainer)
