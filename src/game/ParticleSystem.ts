@@ -21,36 +21,54 @@ export class ParticleSystem {
   }
 
   public createLineExplosion(x: number, y: number, width: number, color: number) {
-    // Create explosion particles across the width of the cleared line
-    for (let i = 0; i < 50; i++) {
+    // Massive explosion particles across the width of the cleared line
+    for (let i = 0; i < 150; i++) {
       const particle: Particle = {
         x: x + Math.random() * width,
-        y: y + Math.random() * 24, // Block height
-        vx: (Math.random() - 0.5) * 8,
-        vy: (Math.random() - 0.5) * 8 - 2, // Slight upward bias
+        y: y + Math.random() * 32, // Bigger block height
+        vx: (Math.random() - 0.5) * 12,
+        vy: (Math.random() - 0.5) * 12 - 3, // More upward bias
         life: 0,
-        maxLife: 60 + Math.random() * 40,
+        maxLife: 80 + Math.random() * 60,
         color: this.getRandomParticleColor(color),
-        size: 2 + Math.random() * 4,
+        size: 3 + Math.random() * 6,
         alpha: 1
       }
       this.particles.push(particle)
     }
 
-    // Create star burst effect
-    for (let i = 0; i < 8; i++) {
-      const angle = (i / 8) * Math.PI * 2
-      const speed = 3 + Math.random() * 2
+    // Enhanced star burst effect with more particles
+    for (let i = 0; i < 16; i++) {
+      const angle = (i / 16) * Math.PI * 2
+      const speed = 5 + Math.random() * 4
       const particle: Particle = {
         x: x + width / 2,
-        y: y + 12,
+        y: y + 16,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         life: 0,
-        maxLife: 80,
+        maxLife: 120,
         color: 0xffffff,
-        size: 6,
+        size: 8 + Math.random() * 4,
         alpha: 1
+      }
+      this.particles.push(particle)
+    }
+
+    // Add shockwave effect
+    for (let i = 0; i < 32; i++) {
+      const angle = (i / 32) * Math.PI * 2
+      const speed = 8 + Math.random() * 3
+      const particle: Particle = {
+        x: x + width / 2,
+        y: y + 16,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 0,
+        maxLife: 40,
+        color: 0x00ffff,
+        size: 2,
+        alpha: 0.8
       }
       this.particles.push(particle)
     }
@@ -121,19 +139,35 @@ export class ParticleSystem {
     // Clear previous particles
     this.container.removeChildren()
     
-    // Render all particles
+    // Render all particles with enhanced effects
     this.particles.forEach(particle => {
       const graphics = new Graphics()
       
-      // Create glow effect
-      graphics.beginFill(particle.color, particle.alpha * 0.3)
-      graphics.drawCircle(particle.x, particle.y, particle.size + 2)
+      // Multiple glow layers for amazing effect
+      for (let i = 4; i >= 1; i--) {
+        graphics.beginFill(particle.color, particle.alpha * 0.1 / i)
+        graphics.drawCircle(particle.x, particle.y, particle.size + i * 3)
+        graphics.endFill()
+      }
+      
+      // Bright core
+      graphics.beginFill(0xffffff, particle.alpha * 0.8)
+      graphics.drawCircle(particle.x, particle.y, particle.size * 0.3)
       graphics.endFill()
       
-      // Main particle
+      // Main particle with gradient effect
       graphics.beginFill(particle.color, particle.alpha)
       graphics.drawCircle(particle.x, particle.y, particle.size)
       graphics.endFill()
+      
+      // Add sparkle effect for large particles
+      if (particle.size > 5) {
+        graphics.lineStyle(1, 0xffffff, particle.alpha)
+        graphics.moveTo(particle.x - particle.size, particle.y)
+        graphics.lineTo(particle.x + particle.size, particle.y)
+        graphics.moveTo(particle.x, particle.y - particle.size)
+        graphics.lineTo(particle.x, particle.y + particle.size)
+      }
       
       this.container.addChild(graphics)
     })

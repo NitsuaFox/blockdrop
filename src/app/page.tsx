@@ -12,12 +12,13 @@ export default function Home() {
   useEffect(() => {
     if (!gameRef.current) return
 
-    // Initialize PixiJS application
+    // Initialize PixiJS application - Much bigger for better visuals
     const app = new Application({
-      width: 800,
-      height: 600,
+      width: 1200,
+      height: 800,
       backgroundColor: 0x0a0a0a,
-      antialias: true
+      antialias: true,
+      resolution: window.devicePixelRatio || 1
     })
 
     appRef.current = app

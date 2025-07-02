@@ -34,10 +34,10 @@ export class TetrisGame {
   private backgroundMusic: HTMLAudioElement | null = null
   private musicWaitingForInteraction = false
   
-  // NES Tetris dimensions
+  // Scaled up dimensions for better visuals
   private readonly BOARD_WIDTH = 10
   private readonly BOARD_HEIGHT = 20
-  private readonly BLOCK_SIZE = 24
+  private readonly BLOCK_SIZE = 32 // Bigger blocks
   
   // Tetromino definitions with modern colors
   private tetrominoes = {
@@ -102,16 +102,19 @@ export class TetrisGame {
     this.gameContainer = new Container()
     this.app.stage.addChild(this.gameContainer)
     
-    // Board container with glow effect
+    // Add title
+    this.setupTitle()
+    
+    // Board container with glow effect - centered and bigger
     this.boardContainer = new Container()
-    this.boardContainer.x = 200
-    this.boardContainer.y = 50
+    this.boardContainer.x = (this.app.screen.width - (this.BOARD_WIDTH * this.BLOCK_SIZE)) / 2
+    this.boardContainer.y = 120
     this.gameContainer.addChild(this.boardContainer)
     
     // Particle container (above board)
     this.particleContainer = new Container()
-    this.particleContainer.x = 200
-    this.particleContainer.y = 50
+    this.particleContainer.x = this.boardContainer.x
+    this.particleContainer.y = this.boardContainer.y
     this.gameContainer.addChild(this.particleContainer)
     
     // UI container
@@ -124,68 +127,135 @@ export class TetrisGame {
     this.drawBoard()
   }
 
+  private setupTitle() {
+    const titleText = new Text('WhatToDo.Games - BlockFall', {
+      fontSize: 48,
+      fill: 0xffffff,
+      fontWeight: 'bold',
+      dropShadow: true,
+      dropShadowColor: 0x00ffff,
+      dropShadowBlur: 20,
+      dropShadowDistance: 3
+    })
+    titleText.x = this.app.screen.width / 2 - titleText.width / 2
+    titleText.y = 30
+    this.gameContainer.addChild(titleText)
+  }
+
   private drawBoard() {
     const boardBg = new Graphics()
-    boardBg.beginFill(0x0a0a0a, 0.8)
+    
+    // Multiple layered background for depth
+    // Outer glow effect
+    for (let i = 20; i >= 1; i--) {
+      boardBg.beginFill(0x001133, 0.02)
+      boardBg.drawRect(-5 - i, -5 - i, this.BOARD_WIDTH * this.BLOCK_SIZE + 10 + i*2, this.BOARD_HEIGHT * this.BLOCK_SIZE + 10 + i*2)
+      boardBg.endFill()
+    }
+    
+    // Main background with gradient effect
+    boardBg.beginFill(0x0f0f1f, 0.9)
     boardBg.drawRect(-5, -5, this.BOARD_WIDTH * this.BLOCK_SIZE + 10, this.BOARD_HEIGHT * this.BLOCK_SIZE + 10)
     boardBg.endFill()
     
-    // Add neon border glow
-    boardBg.lineStyle(2, 0x00ffff, 1)
-    boardBg.drawRect(-5, -5, this.BOARD_WIDTH * this.BLOCK_SIZE + 10, this.BOARD_HEIGHT * this.BLOCK_SIZE + 10)
+    // Inner shadow
+    boardBg.beginFill(0x000000, 0.3)
+    boardBg.drawRect(0, 0, this.BOARD_WIDTH * this.BLOCK_SIZE, this.BOARD_HEIGHT * this.BLOCK_SIZE)
+    boardBg.endFill()
+    
+    // Grid lines with subtle glow
+    boardBg.lineStyle(1, 0x1a1a3a, 0.3)
+    for (let x = 0; x <= this.BOARD_WIDTH; x++) {
+      boardBg.moveTo(x * this.BLOCK_SIZE, 0)
+      boardBg.lineTo(x * this.BLOCK_SIZE, this.BOARD_HEIGHT * this.BLOCK_SIZE)
+    }
+    for (let y = 0; y <= this.BOARD_HEIGHT; y++) {
+      boardBg.moveTo(0, y * this.BLOCK_SIZE)
+      boardBg.lineTo(this.BOARD_WIDTH * this.BLOCK_SIZE, y * this.BLOCK_SIZE)
+    }
+    
+    // Animated neon border
+    const time = Date.now() * 0.002
+    const glowIntensity = 0.8 + Math.sin(time) * 0.3
+    
+    // Multiple border layers for amazing glow
+    boardBg.lineStyle(8, 0x00ffff, 0.1)
+    boardBg.drawRect(-8, -8, this.BOARD_WIDTH * this.BLOCK_SIZE + 16, this.BOARD_HEIGHT * this.BLOCK_SIZE + 16)
+    
+    boardBg.lineStyle(4, 0x00ffff, 0.3)
+    boardBg.drawRect(-6, -6, this.BOARD_WIDTH * this.BLOCK_SIZE + 12, this.BOARD_HEIGHT * this.BLOCK_SIZE + 12)
+    
+    boardBg.lineStyle(2, 0x00ffff, glowIntensity)
+    boardBg.drawRect(-4, -4, this.BOARD_WIDTH * this.BLOCK_SIZE + 8, this.BOARD_HEIGHT * this.BLOCK_SIZE + 8)
+    
+    boardBg.lineStyle(1, 0xffffff, 1)
+    boardBg.drawRect(-2, -2, this.BOARD_WIDTH * this.BLOCK_SIZE + 4, this.BOARD_HEIGHT * this.BLOCK_SIZE + 4)
     
     this.boardContainer.addChild(boardBg)
   }
 
   private setupUI() {
+    const rightPanelX = this.boardContainer.x + (this.BOARD_WIDTH * this.BLOCK_SIZE) + 50
+    
     // Score display
     const scoreText = new Text('SCORE: 0', {
-      fontSize: 24,
+      fontSize: 28,
       fill: 0xffffff,
       fontWeight: 'bold',
       dropShadow: true,
       dropShadowColor: 0x00ffff,
       dropShadowBlur: 10
     })
-    scoreText.x = 450
-    scoreText.y = 100
+    scoreText.x = rightPanelX
+    scoreText.y = 150
     this.uiContainer.addChild(scoreText)
     
     // Level display
     const levelText = new Text('LEVEL: 1', {
-      fontSize: 24,
+      fontSize: 28,
       fill: 0xffffff,
       fontWeight: 'bold',
       dropShadow: true,
       dropShadowColor: 0x00ffff,
       dropShadowBlur: 10
     })
-    levelText.x = 450
-    levelText.y = 140
+    levelText.x = rightPanelX
+    levelText.y = 200
     this.uiContainer.addChild(levelText)
     
     // Lines display
     const linesText = new Text('LINES: 0', {
-      fontSize: 24,
+      fontSize: 28,
       fill: 0xffffff,
       fontWeight: 'bold',
       dropShadow: true,
       dropShadowColor: 0x00ffff,
       dropShadowBlur: 10
     })
-    linesText.x = 450
-    linesText.y = 180
+    linesText.x = rightPanelX
+    linesText.y = 250
     this.uiContainer.addChild(linesText)
 
     // Music control hint
     const musicText = new Text('M: Toggle Music', {
-      fontSize: 16,
+      fontSize: 18,
       fill: 0xcccccc,
       fontWeight: 'bold'
     })
-    musicText.x = 450
-    musicText.y = 220
+    musicText.x = rightPanelX
+    musicText.y = 300
     this.uiContainer.addChild(musicText)
+    
+    // Controls info
+    const controlsText = new Text('CONTROLS:\nArrows: Move\nZ/X: Rotate\nUp: Hard Drop', {
+      fontSize: 16,
+      fill: 0x888888,
+      fontWeight: 'bold',
+      lineHeight: 20
+    })
+    controlsText.x = rightPanelX
+    controlsText.y = 350
+    this.uiContainer.addChild(controlsText)
   }
 
   private setupMusic() {
@@ -485,30 +555,81 @@ export class TetrisGame {
   }
 
   private drawGlowBlock(x: number, y: number, color: number, glowColor?: number) {
-    const block = new Graphics()
+    const blockContainer = new Container()
     
-    // Glow effect
+    // Outer glow layers for amazing effect
     if (glowColor) {
-      block.beginFill(glowColor, 0.3)
-      block.drawRect(x - 2, y - 2, this.BLOCK_SIZE + 4, this.BLOCK_SIZE + 4)
-      block.endFill()
+      // Multiple glow layers for depth
+      for (let i = 6; i >= 1; i--) {
+        const glow = new Graphics()
+        const alpha = 0.1 - (i * 0.01)
+        glow.beginFill(glowColor, alpha)
+        glow.drawRect(x - i*2, y - i*2, this.BLOCK_SIZE + i*4, this.BLOCK_SIZE + i*4)
+        glow.endFill()
+        blockContainer.addChild(glow)
+      }
     }
     
-    // Main block with gradient effect
-    block.beginFill(color)
-    block.drawRect(x + 1, y + 1, this.BLOCK_SIZE - 2, this.BLOCK_SIZE - 2)
-    block.endFill()
+    // Shadow/depth effect
+    const shadow = new Graphics()
+    shadow.beginFill(0x000000, 0.4)
+    shadow.drawRect(x + 2, y + 2, this.BLOCK_SIZE, this.BLOCK_SIZE)
+    shadow.endFill()
+    blockContainer.addChild(shadow)
     
-    // Highlight
-    block.beginFill(0xffffff, 0.3)
-    block.drawRect(x + 2, y + 2, this.BLOCK_SIZE - 6, 3)
-    block.endFill()
+    // Main block with enhanced gradient
+    const mainBlock = new Graphics()
+    mainBlock.beginFill(color)
+    mainBlock.drawRect(x, y, this.BLOCK_SIZE, this.BLOCK_SIZE)
+    mainBlock.endFill()
+    blockContainer.addChild(mainBlock)
     
-    // Border
-    block.lineStyle(1, 0xffffff, 0.5)
-    block.drawRect(x + 1, y + 1, this.BLOCK_SIZE - 2, this.BLOCK_SIZE - 2)
+    // Top highlight (light reflection)
+    const topHighlight = new Graphics()
+    topHighlight.beginFill(0xffffff, 0.4)
+    topHighlight.drawRect(x + 2, y + 1, this.BLOCK_SIZE - 4, 6)
+    topHighlight.endFill()
+    blockContainer.addChild(topHighlight)
     
-    this.boardContainer.addChild(block)
+    // Left highlight (edge lighting)
+    const leftHighlight = new Graphics()
+    leftHighlight.beginFill(0xffffff, 0.2)
+    leftHighlight.drawRect(x + 1, y + 2, 4, this.BLOCK_SIZE - 4)
+    leftHighlight.endFill()
+    blockContainer.addChild(leftHighlight)
+    
+    // Bottom shadow (depth)
+    const bottomShadow = new Graphics()
+    bottomShadow.beginFill(0x000000, 0.3)
+    bottomShadow.drawRect(x + 2, y + this.BLOCK_SIZE - 4, this.BLOCK_SIZE - 4, 3)
+    bottomShadow.endFill()
+    blockContainer.addChild(bottomShadow)
+    
+    // Right shadow (depth)
+    const rightShadow = new Graphics()
+    rightShadow.beginFill(0x000000, 0.3)
+    rightShadow.drawRect(x + this.BLOCK_SIZE - 4, y + 2, 3, this.BLOCK_SIZE - 4)
+    rightShadow.endFill()
+    blockContainer.addChild(rightShadow)
+    
+    // Outer border with metallic effect
+    const border = new Graphics()
+    border.lineStyle(2, 0xffffff, 0.6)
+    border.drawRect(x, y, this.BLOCK_SIZE, this.BLOCK_SIZE)
+    border.lineStyle(1, glowColor || color, 0.8)
+    border.drawRect(x + 1, y + 1, this.BLOCK_SIZE - 2, this.BLOCK_SIZE - 2)
+    blockContainer.addChild(border)
+    
+    // Inner sparkle effect
+    if (Math.random() < 0.1) { // Random sparkles
+      const sparkle = new Graphics()
+      sparkle.beginFill(0xffffff, 0.8)
+      sparkle.drawCircle(x + Math.random() * this.BLOCK_SIZE, y + Math.random() * this.BLOCK_SIZE, 1)
+      sparkle.endFill()
+      blockContainer.addChild(sparkle)
+    }
+    
+    this.boardContainer.addChild(blockContainer)
   }
 
   private showGameOver() {
