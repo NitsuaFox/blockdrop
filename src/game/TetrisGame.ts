@@ -31,7 +31,8 @@ export class TetrisGame {
   private board: number[][]
   private currentPiece: Tetromino | null = null
   private ghostPiece: Tetromino | null = null
-  private nextPiece: Tetromino | null = null
+  private nextPieces: Tetromino[] = []
+  private nextPieceContainer!: Container
   private score = 0
   private level = 1
   private lines = 0
@@ -214,6 +215,12 @@ export class TetrisGame {
     // UI container
     this.uiContainer = new Container()
     this.gameContainer.addChild(this.uiContainer)
+    
+    // Next piece container (left side)
+    this.nextPieceContainer = new Container()
+    this.nextPieceContainer.x = 50
+    this.nextPieceContainer.y = 150
+    this.gameContainer.addChild(this.nextPieceContainer)
     
     // Initialize particle system
     this.particleSystem = new ParticleSystem(this.particleContainer)
@@ -440,19 +447,26 @@ export class TetrisGame {
   }
 
   private spawnNewPiece() {
-    const pieces = Object.keys(this.tetrominoes)
-    const randomPiece = pieces[Math.floor(Math.random() * pieces.length)]
-    const pieceTemplate = this.tetrominoes[randomPiece as keyof typeof this.tetrominoes]
+    // Initialize queue if empty
+    if (this.nextPieces.length === 0) {
+      this.fillNextPieceQueue()
+    }
+    
+    // Get next piece from queue
+    const nextPiece = this.nextPieces.shift()!
     
     this.currentPiece = {
-      shape: pieceTemplate.shapes[0], // Always spawn in state 0
-      color: pieceTemplate.color,
-      glowColor: pieceTemplate.glowColor,
+      shape: nextPiece.shape,
+      color: nextPiece.color,
+      glowColor: nextPiece.glowColor,
       x: Math.floor(this.BOARD_WIDTH / 2) - 2, // Center in 4x4 grid
       y: 0,
-      type: pieceTemplate.type,
+      type: nextPiece.type,
       rotation: 0
     }
+    
+    // Add new piece to queue
+    this.addRandomPieceToQueue()
     
     // Update ghost piece
     this.updateGhostPiece()
@@ -462,6 +476,31 @@ export class TetrisGame {
       this.gameRunning = false
       this.showGameOver()
     }
+  }
+  
+  private fillNextPieceQueue() {
+    // Fill queue with 3 pieces initially
+    for (let i = 0; i < 3; i++) {
+      this.addRandomPieceToQueue()
+    }
+  }
+  
+  private addRandomPieceToQueue() {
+    const pieces = Object.keys(this.tetrominoes)
+    const randomPiece = pieces[Math.floor(Math.random() * pieces.length)]
+    const pieceTemplate = this.tetrominoes[randomPiece as keyof typeof this.tetrominoes]
+    
+    const newPiece: Tetromino = {
+      shape: pieceTemplate.shapes[0], // Always spawn in state 0
+      color: pieceTemplate.color,
+      glowColor: pieceTemplate.glowColor,
+      x: 0, // Position will be set when rendering preview
+      y: 0,
+      type: pieceTemplate.type,
+      rotation: 0
+    }
+    
+    this.nextPieces.push(newPiece)
   }
 
   private updateGhostPiece() {
@@ -755,6 +794,9 @@ export class TetrisGame {
     // Render background effects
     this.backgroundEffects.render()
     
+    // Render next piece queue
+    this.renderNextPieceQueue()
+    
     // Render particles
     this.particleSystem.render()
   }
@@ -995,6 +1037,136 @@ export class TetrisGame {
         }
       }
     }
+  }
+  
+  private renderNextPieceQueue() {
+    // Clear previous renders
+    this.nextPieceContainer.removeChildren()
+    
+    // Get frequency data for music reactivity
+    const frequencyData = this.audioAnalyzer.getFrequencyData()
+    
+    // Title for next pieces
+    const titleText = new Text('NEXT', {
+      fontSize: 20,
+      fill: 0xffffff,
+      fontWeight: 'bold',
+      dropShadow: true,
+      dropShadowColor: 0x00ffff,
+      dropShadowBlur: 5
+    })
+    titleText.x = 10
+    titleText.y = 0
+    this.nextPieceContainer.addChild(titleText)
+    
+    // Render each next piece in a box
+    this.nextPieces.forEach((piece, index) => {
+      const boxY = 40 + index * 120
+      
+      // Calculate music reactivity for each box
+      let glowIntensity = 0.5
+      let boxScale = 1.0
+      let pulseAlpha = 0.3
+      
+      if (frequencyData) {
+        // Different boxes react to different frequencies
+        switch (index) {
+          case 0: // First box reacts to bass
+            glowIntensity = 0.5 + frequencyData.bass * 0.8
+            boxScale = 1.0 + frequencyData.bass * 0.3
+            pulseAlpha = 0.3 + frequencyData.bass * 0.4
+            break
+          case 1: // Second box reacts to mid
+            glowIntensity = 0.5 + frequencyData.mid * 0.8
+            boxScale = 1.0 + frequencyData.mid * 0.3
+            pulseAlpha = 0.3 + frequencyData.mid * 0.4
+            break
+          case 2: // Third box reacts to treble
+            glowIntensity = 0.5 + frequencyData.treble * 0.8
+            boxScale = 1.0 + frequencyData.treble * 0.3
+            pulseAlpha = 0.3 + frequencyData.treble * 0.4
+            break
+        }
+      }
+      
+      // Create container for this preview box
+      const boxContainer = new Container()
+      boxContainer.x = 0
+      boxContainer.y = boxY
+      boxContainer.scale.set(boxScale)
+      
+      // Draw reactive box background
+      const boxBg = new Graphics()
+      
+      // Outer glow (music reactive)
+      boxBg.lineStyle(6, piece.glowColor, pulseAlpha * 0.3)
+      boxBg.drawRoundedRect(-5, -5, 110, 110, 8)
+      
+      // Inner glow
+      boxBg.lineStyle(3, piece.glowColor, pulseAlpha * 0.6)
+      boxBg.drawRoundedRect(-2, -2, 104, 104, 6)
+      
+      // Box fill with glass effect
+      boxBg.beginFill(0x111122, 0.4 + pulseAlpha * 0.2)
+      boxBg.drawRoundedRect(0, 0, 100, 100, 5)
+      boxBg.endFill()
+      
+      // Bright inner border
+      boxBg.lineStyle(1, 0xffffff, glowIntensity)
+      boxBg.drawRoundedRect(2, 2, 96, 96, 4)
+      
+      boxContainer.addChild(boxBg)
+      
+      // Calculate piece position within box (centered)
+      const pieceSize = 20 // Smaller than game pieces
+      const offsetX = 50 - (piece.shape[0].length * pieceSize) / 2
+      const offsetY = 50 - (piece.shape.length * pieceSize) / 2
+      
+      // Render the piece blocks
+      for (let y = 0; y < piece.shape.length; y++) {
+        for (let x = 0; x < piece.shape[y].length; x++) {
+          if (piece.shape[y][x]) {
+            const blockX = offsetX + x * pieceSize
+            const blockY = offsetY + y * pieceSize
+            this.drawPreviewBlock(boxContainer, blockX, blockY, pieceSize, piece.color, piece.glowColor, glowIntensity)
+          }
+        }
+      }
+      
+      this.nextPieceContainer.addChild(boxContainer)
+    })
+  }
+  
+  private drawPreviewBlock(container: Container, x: number, y: number, size: number, color: number, glowColor: number, intensity: number) {
+    const block = new Graphics()
+    
+    // Outer glow (music reactive)
+    for (let i = 3; i >= 1; i--) {
+      block.beginFill(glowColor, intensity * 0.2 / i)
+      block.drawRect(x - i, y - i, size + i * 2, size + i * 2)
+      block.endFill()
+    }
+    
+    // Main block with glass effect
+    block.beginFill(color, 0.9)
+    block.drawRect(x, y, size, size)
+    block.endFill()
+    
+    // Glass reflection
+    block.beginFill(0xffffff, 0.4 * intensity)
+    block.drawRect(x + 2, y + 1, size - 4, 6)
+    block.endFill()
+    
+    block.beginFill(0xffffff, 0.2 * intensity)
+    block.drawRect(x + 1, y + 2, 4, size - 4)
+    block.endFill()
+    
+    // Bright specular highlight
+    block.beginFill(0xffffff, 0.8 * intensity)
+    block.drawRect(x + 2, y + 2, size - 8, 2)
+    block.endFill()
+    
+    container.addChild(block)
   }
 
   public destroy() {
