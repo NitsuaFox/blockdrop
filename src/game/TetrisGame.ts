@@ -236,7 +236,8 @@ export class TetrisGame {
   }
 
   private setupTitle() {
-    const titleText = new Text('WhatToDo.Games - BlockFall', {
+    // Main game title
+    const titleText = new Text('BlockFall', {
       fontSize: 48,
       fill: 0xffffff,
       fontWeight: 'bold',
@@ -248,6 +249,20 @@ export class TetrisGame {
     titleText.x = this.app.screen.width / 2 - titleText.width / 2
     titleText.y = 30
     this.gameContainer.addChild(titleText)
+    
+    // Credit line under the game area
+    const creditText = new Text('By AustinCreative.UK', {
+      fontSize: 16,
+      fill: 0xcccccc,
+      fontWeight: 'normal',
+      dropShadow: true,
+      dropShadowColor: 0x000000,
+      dropShadowBlur: 3,
+      dropShadowDistance: 1
+    })
+    creditText.x = this.app.screen.width / 2 - creditText.width / 2
+    creditText.y = this.boardContainer.y + (this.BOARD_HEIGHT * this.BLOCK_SIZE) + 20
+    this.gameContainer.addChild(creditText)
   }
 
   private drawBoard() {
@@ -1047,18 +1062,7 @@ export class TetrisGame {
     // Get frequency data for music reactivity
     const frequencyData = this.audioAnalyzer.getFrequencyData()
     
-    // Title for next pieces
-    const titleText = new Text('NEXT', {
-      fontSize: 20,
-      fill: 0xffffff,
-      fontWeight: 'bold',
-      dropShadow: true,
-      dropShadowColor: 0x00ffff,
-      dropShadowBlur: 5
-    })
-    titleText.x = 0
-    titleText.y = -30
-    this.nextPieceContainer.addChild(titleText)
+    // No title text needed
     
     // Box dimensions to match game grid (4x4 blocks)
     const boxWidth = 4 * this.BLOCK_SIZE
@@ -1069,59 +1073,47 @@ export class TetrisGame {
     this.nextPieces.forEach((piece, index) => {
       const boxY = index * (boxHeight + boxGap)
       
-      // Calculate music reactivity for each box
+      // Calculate music reactivity for each box (border effects only)
+      let bassIntensity = 0.0
+      let midIntensity = 0.0
+      let trebleIntensity = 0.0
       let glowIntensity = 0.5
-      let boxScale = 1.0
-      let pulseAlpha = 0.3
       
       if (frequencyData) {
-        // Different boxes react to different frequencies
-        switch (index) {
-          case 0: // First box reacts to bass
-            glowIntensity = 0.5 + frequencyData.bass * 0.8
-            boxScale = 1.0 + frequencyData.bass * 0.2
-            pulseAlpha = 0.3 + frequencyData.bass * 0.4
-            break
-          case 1: // Second box reacts to mid
-            glowIntensity = 0.5 + frequencyData.mid * 0.8
-            boxScale = 1.0 + frequencyData.mid * 0.2
-            pulseAlpha = 0.3 + frequencyData.mid * 0.4
-            break
-          case 2: // Third box reacts to treble
-            glowIntensity = 0.5 + frequencyData.treble * 0.8
-            boxScale = 1.0 + frequencyData.treble * 0.2
-            pulseAlpha = 0.3 + frequencyData.treble * 0.4
-            break
-        }
+        bassIntensity = frequencyData.bass
+        midIntensity = frequencyData.mid
+        trebleIntensity = frequencyData.treble
+        glowIntensity = 0.5 + frequencyData.overall * 0.5
       }
       
-      // Create container for this preview box
+      // Create container for this preview box (no scaling)
       const boxContainer = new Container()
       boxContainer.x = 0
       boxContainer.y = boxY
       
-      // Set pivot point to center for proper scaling
-      const centerX = boxWidth / 2
-      const centerY = boxHeight / 2
-      boxContainer.pivot.set(centerX, centerY)
-      boxContainer.x = centerX
-      boxContainer.y = boxY + centerY
-      boxContainer.scale.set(boxScale)
-      
-      // Draw reactive box background
+      // Draw reactive box background with music-reactive borders
       const boxBg = new Graphics()
       
-      // Outer glow (music reactive)
-      const glowSize = 6
-      boxBg.lineStyle(glowSize, piece.glowColor, pulseAlpha * 0.3)
-      boxBg.drawRoundedRect(-glowSize/2, -glowSize/2, boxWidth + glowSize, boxHeight + glowSize, 8)
+      // Bass - thick outer glow (red-orange) similar to main game
+      if (bassIntensity > 0.1) {
+        boxBg.lineStyle(8 * bassIntensity, 0xff4400, 0.3 * bassIntensity)
+        boxBg.drawRoundedRect(-10, -10, boxWidth + 20, boxHeight + 20, 8)
+      }
       
-      // Inner glow
-      boxBg.lineStyle(3, piece.glowColor, pulseAlpha * 0.6)
-      boxBg.drawRoundedRect(-1, -1, boxWidth + 2, boxHeight + 2, 6)
+      // Mid - medium border (cyan-blue)
+      if (midIntensity > 0.1) {
+        boxBg.lineStyle(6 * midIntensity, 0x00aaff, 0.5 * midIntensity)
+        boxBg.drawRoundedRect(-6, -6, boxWidth + 12, boxHeight + 12, 6)
+      }
+      
+      // Treble - thin inner sparkle (white-yellow)
+      if (trebleIntensity > 0.1) {
+        boxBg.lineStyle(3 * trebleIntensity, 0xffffaa, 0.7 * trebleIntensity)
+        boxBg.drawRoundedRect(-3, -3, boxWidth + 6, boxHeight + 6, 4)
+      }
       
       // Box fill with glass effect
-      boxBg.beginFill(0x111122, 0.4 + pulseAlpha * 0.2)
+      boxBg.beginFill(0x111122, 0.4)
       boxBg.drawRoundedRect(0, 0, boxWidth, boxHeight, 5)
       boxBg.endFill()
       
@@ -1131,8 +1123,8 @@ export class TetrisGame {
       
       boxContainer.addChild(boxBg)
       
-      // Calculate piece position within box (centered)
-      const pieceSize = this.BLOCK_SIZE // Same size as game blocks
+      // Calculate piece position within box (centered, smaller blocks)
+      const pieceSize = this.BLOCK_SIZE * 0.7 // Smaller than game blocks
       const offsetX = (boxWidth - piece.shape[0].length * pieceSize) / 2
       const offsetY = (boxHeight - piece.shape.length * pieceSize) / 2
       
