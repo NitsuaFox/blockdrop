@@ -302,6 +302,18 @@ export class TetrisGame {
     return false
   }
 
+  private hardDrop() {
+    if (!this.currentPiece) return
+    
+    // Drop piece as far as possible
+    while (this.movePiece(0, 1)) {
+      // Keep dropping until collision
+    }
+    
+    // Place the piece immediately
+    this.placePiece()
+  }
+
   private setupControls() {
     window.addEventListener('keydown', (e) => {
       if (!this.gameRunning) return
@@ -319,6 +331,10 @@ export class TetrisGame {
           }
           break
         case 'ArrowUp':
+          this.hardDrop()
+          break
+        case 'KeyZ':
+        case 'KeyX':
         case 'Space':
           this.rotatePiece()
           break
