@@ -216,10 +216,11 @@ export class TetrisGame {
     this.uiContainer = new Container()
     this.gameContainer.addChild(this.uiContainer)
     
-    // Next piece container (left side)
+    // Next piece container (left side, aligned with game board)
     this.nextPieceContainer = new Container()
-    this.nextPieceContainer.x = 50
-    this.nextPieceContainer.y = 150
+    // Position one grid space left of the game board, aligned with top
+    this.nextPieceContainer.x = this.boardContainer.x - (4 * this.BLOCK_SIZE + this.BLOCK_SIZE) // 4 blocks wide + 1 block gap
+    this.nextPieceContainer.y = this.boardContainer.y
     this.gameContainer.addChild(this.nextPieceContainer)
     
     // Initialize particle system
@@ -1055,13 +1056,18 @@ export class TetrisGame {
       dropShadowColor: 0x00ffff,
       dropShadowBlur: 5
     })
-    titleText.x = 10
-    titleText.y = 0
+    titleText.x = 0
+    titleText.y = -30
     this.nextPieceContainer.addChild(titleText)
+    
+    // Box dimensions to match game grid (4x4 blocks)
+    const boxWidth = 4 * this.BLOCK_SIZE
+    const boxHeight = 4 * this.BLOCK_SIZE
+    const boxGap = this.BLOCK_SIZE // 1 grid space gap
     
     // Render each next piece in a box
     this.nextPieces.forEach((piece, index) => {
-      const boxY = 40 + index * 120
+      const boxY = index * (boxHeight + boxGap)
       
       // Calculate music reactivity for each box
       let glowIntensity = 0.5
@@ -1073,17 +1079,17 @@ export class TetrisGame {
         switch (index) {
           case 0: // First box reacts to bass
             glowIntensity = 0.5 + frequencyData.bass * 0.8
-            boxScale = 1.0 + frequencyData.bass * 0.3
+            boxScale = 1.0 + frequencyData.bass * 0.2
             pulseAlpha = 0.3 + frequencyData.bass * 0.4
             break
           case 1: // Second box reacts to mid
             glowIntensity = 0.5 + frequencyData.mid * 0.8
-            boxScale = 1.0 + frequencyData.mid * 0.3
+            boxScale = 1.0 + frequencyData.mid * 0.2
             pulseAlpha = 0.3 + frequencyData.mid * 0.4
             break
           case 2: // Third box reacts to treble
             glowIntensity = 0.5 + frequencyData.treble * 0.8
-            boxScale = 1.0 + frequencyData.treble * 0.3
+            boxScale = 1.0 + frequencyData.treble * 0.2
             pulseAlpha = 0.3 + frequencyData.treble * 0.4
             break
         }
@@ -1093,34 +1099,42 @@ export class TetrisGame {
       const boxContainer = new Container()
       boxContainer.x = 0
       boxContainer.y = boxY
+      
+      // Set pivot point to center for proper scaling
+      const centerX = boxWidth / 2
+      const centerY = boxHeight / 2
+      boxContainer.pivot.set(centerX, centerY)
+      boxContainer.x = centerX
+      boxContainer.y = boxY + centerY
       boxContainer.scale.set(boxScale)
       
       // Draw reactive box background
       const boxBg = new Graphics()
       
       // Outer glow (music reactive)
-      boxBg.lineStyle(6, piece.glowColor, pulseAlpha * 0.3)
-      boxBg.drawRoundedRect(-5, -5, 110, 110, 8)
+      const glowSize = 6
+      boxBg.lineStyle(glowSize, piece.glowColor, pulseAlpha * 0.3)
+      boxBg.drawRoundedRect(-glowSize/2, -glowSize/2, boxWidth + glowSize, boxHeight + glowSize, 8)
       
       // Inner glow
       boxBg.lineStyle(3, piece.glowColor, pulseAlpha * 0.6)
-      boxBg.drawRoundedRect(-2, -2, 104, 104, 6)
+      boxBg.drawRoundedRect(-1, -1, boxWidth + 2, boxHeight + 2, 6)
       
       // Box fill with glass effect
       boxBg.beginFill(0x111122, 0.4 + pulseAlpha * 0.2)
-      boxBg.drawRoundedRect(0, 0, 100, 100, 5)
+      boxBg.drawRoundedRect(0, 0, boxWidth, boxHeight, 5)
       boxBg.endFill()
       
       // Bright inner border
       boxBg.lineStyle(1, 0xffffff, glowIntensity)
-      boxBg.drawRoundedRect(2, 2, 96, 96, 4)
+      boxBg.drawRoundedRect(2, 2, boxWidth - 4, boxHeight - 4, 4)
       
       boxContainer.addChild(boxBg)
       
       // Calculate piece position within box (centered)
-      const pieceSize = 20 // Smaller than game pieces
-      const offsetX = 50 - (piece.shape[0].length * pieceSize) / 2
-      const offsetY = 50 - (piece.shape.length * pieceSize) / 2
+      const pieceSize = this.BLOCK_SIZE // Same size as game blocks
+      const offsetX = (boxWidth - piece.shape[0].length * pieceSize) / 2
+      const offsetY = (boxHeight - piece.shape.length * pieceSize) / 2
       
       // Render the piece blocks
       for (let y = 0; y < piece.shape.length; y++) {

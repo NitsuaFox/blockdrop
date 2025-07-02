@@ -52,7 +52,7 @@ export class BackgroundEffects {
         scale: 0.2 + Math.random() * 0.8,
         targetScale: 0.2 + Math.random() * 0.8,
         color: this.getRandomShapeColor(),
-        alpha: 0.15 + Math.random() * 0.35,
+        alpha: 0.05 + Math.random() * 0.15,
         type: shapeTypes[Math.floor(Math.random() * shapeTypes.length)],
         size: 15 + Math.random() * 50,
         pulsePhase: Math.random() * Math.PI * 2
@@ -64,14 +64,14 @@ export class BackgroundEffects {
 
   private getRandomShapeColor(): number {
     const colors = [
-      0x4a90e2, // Blue
-      0x7ed321, // Green
-      0xf5a623, // Orange
-      0xd0021b, // Red
-      0x9013fe, // Purple
-      0x50e3c2, // Cyan
-      0xbd10e0, // Magenta
-      0xf8e71c  // Yellow
+      0x2a4a72, // Desaturated blue
+      0x4a6641, // Desaturated green
+      0x7a5a33, // Desaturated orange
+      0x6a2a2b, // Desaturated red
+      0x5a3a7e, // Desaturated purple
+      0x3a6a62, // Desaturated cyan
+      0x6a3a60, // Desaturated magenta
+      0x7a7a3c  // Desaturated yellow
     ]
     return colors[Math.floor(Math.random() * colors.length)]
   }
