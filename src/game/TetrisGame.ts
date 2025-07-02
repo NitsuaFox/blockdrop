@@ -359,16 +359,35 @@ export class TetrisGame {
       this.backgroundMusic.loop = true
       this.backgroundMusic.volume = 0.6
       
+      console.log('Music file loaded, attempting to play...')
+      
+      // Set up event listeners for audio analyzer connection
+      this.backgroundMusic.addEventListener('play', () => {
+        console.log('Music started playing, connecting audio analyzer...')
+        // Connect audio analyzer when music starts playing
+        setTimeout(() => {
+          if (this.audioAnalyzer.connect(this.backgroundMusic!)) {
+            console.log('Audio analyzer connected successfully')
+          } else {
+            console.log('Audio analyzer connection failed')
+          }
+        }, 100) // Small delay to ensure audio is fully playing
+      })
+      
+      this.backgroundMusic.addEventListener('error', (e) => {
+        console.error('Music loading error:', e)
+      })
+      
       // Try to start music immediately
-      this.backgroundMusic.play().catch(() => {
+      this.backgroundMusic.play().then(() => {
+        console.log('Music autoplay successful')
+      }).catch(() => {
+        console.log('Music autoplay blocked, waiting for user interaction')
         // If autoplay fails, start music on ANY user interaction
         this.musicWaitingForInteraction = true
         this.setupAutoplayWorkaround()
         this.updateMusicUI()
       })
-      
-      // Connect audio analyzer to music for frequency analysis
-      this.audioAnalyzer.connect(this.backgroundMusic)
     } catch (error) {
       console.log('Could not load background music:', error)
     }

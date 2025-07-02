@@ -7,17 +7,32 @@ export class AudioAnalyzer {
 
   public connect(audioElement: HTMLAudioElement): boolean {
     try {
+      // Don't connect twice
+      if (this.connected) {
+        console.log('Audio analyzer already connected')
+        return true
+      }
+      
+      console.log('Creating audio context...')
       // Create audio context
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
       
+      // Resume context if suspended
+      if (this.audioContext.state === 'suspended') {
+        this.audioContext.resume()
+      }
+      
+      console.log('Creating analyser node...')
       // Create analyser node
       this.analyser = this.audioContext.createAnalyser()
       this.analyser.fftSize = 256 // Good balance of frequency resolution and performance
       this.analyser.smoothingTimeConstant = 0.8 // Smooth out rapid changes
       
+      console.log('Creating media source...')
       // Create source from audio element
       this.source = this.audioContext.createMediaElementSource(audioElement)
       
+      console.log('Connecting audio nodes...')
       // Connect: source -> analyser -> destination
       this.source.connect(this.analyser)
       this.analyser.connect(this.audioContext.destination)
@@ -26,6 +41,7 @@ export class AudioAnalyzer {
       this.dataArray = new Uint8Array(this.analyser.frequencyBinCount)
       
       this.connected = true
+      console.log('Audio analyzer connected successfully')
       return true
     } catch (error) {
       console.warn('Audio analysis not available:', error)
