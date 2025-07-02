@@ -22,9 +22,7 @@ export class TetrisGame {
   private boardContainer!: Container
   private uiContainer!: Container
   private particleContainer!: Container
-  private fullscreenParticleContainer!: Container
   private particleSystem!: ParticleSystem
-  private fullscreenParticleSystem!: ParticleSystem
   private board: number[][]
   private currentPiece: Tetromino | null = null
   private nextPiece: Tetromino | null = null
@@ -38,14 +36,10 @@ export class TetrisGame {
   private musicWaitingForInteraction = false
   
   // Responsive layout properties
-  private gameFieldX = 0
-  private gameFieldY = 0
-  private uiPanelX = 0
-  
-  // Scaled up dimensions for better visuals
+  // Scaled up dimensions for better visuals  
   private readonly BOARD_WIDTH = 10
   private readonly BOARD_HEIGHT = 20
-  private BLOCK_SIZE = 32 // Will be calculated based on screen size
+  private readonly BLOCK_SIZE = 32 // Fixed size
   
   // SRS Tetromino definitions with all 4 rotation states
   private tetrominoes = {
@@ -169,7 +163,6 @@ export class TetrisGame {
     this.app = app
     this.board = Array(this.BOARD_HEIGHT).fill(null).map(() => Array(this.BOARD_WIDTH).fill(0))
     
-    this.calculateLayout()
     this.setupContainers()
     this.setupUI()
     this.setupMusic()
@@ -178,87 +171,39 @@ export class TetrisGame {
     this.setupControls()
   }
 
-  public handleResize(width: number, height: number) {
-    this.calculateLayout()
-    this.repositionElements()
-  }
-
-  private calculateLayout() {
-    const screenWidth = this.app.screen.width
-    const screenHeight = this.app.screen.height
-    
-    // Keep it simple - small fixed size like classic Tetris
-    this.BLOCK_SIZE = 20 // Fixed small block size
-    
-    const gameFieldWidth = this.BOARD_WIDTH * this.BLOCK_SIZE  // 10 * 20 = 200px
-    const gameFieldHeight = this.BOARD_HEIGHT * this.BLOCK_SIZE // 20 * 20 = 400px
-    
-    // Center the game field
-    this.gameFieldX = (screenWidth - gameFieldWidth) / 2
-    this.gameFieldY = (screenHeight - gameFieldHeight) / 2
-    
-    // Position UI panel to the right
-    this.uiPanelX = this.gameFieldX + gameFieldWidth + 30
-  }
-
-  private repositionElements() {
-    if (!this.boardContainer || !this.uiContainer) return
-    
-    // Reposition board
-    this.boardContainer.x = this.gameFieldX
-    this.boardContainer.y = this.gameFieldY
-    
-    // Reposition particle containers
-    this.particleContainer.x = this.gameFieldX
-    this.particleContainer.y = this.gameFieldY
-    
-    // Recreate UI with new positions
-    this.uiContainer.removeChildren()
-    this.setupUI()
-    
-    // Recreate title
-    this.gameContainer.removeChildAt(0) // Remove title
-    this.setupTitle()
-  }
-
   private setupContainers() {
     // Main game container
     this.gameContainer = new Container()
     this.app.stage.addChild(this.gameContainer)
     
-    // Fullscreen particle container (behind everything)
-    this.fullscreenParticleContainer = new Container()
-    this.app.stage.addChildAt(this.fullscreenParticleContainer, 0)
-    
     // Add title
     this.setupTitle()
     
-    // Board container with responsive positioning
+    // Board container - centered like before
     this.boardContainer = new Container()
-    this.boardContainer.x = this.gameFieldX
-    this.boardContainer.y = this.gameFieldY
+    this.boardContainer.x = (this.app.screen.width - (this.BOARD_WIDTH * this.BLOCK_SIZE)) / 2
+    this.boardContainer.y = 120
     this.gameContainer.addChild(this.boardContainer)
     
-    // Local particle container (above board)
+    // Particle container (above board)
     this.particleContainer = new Container()
-    this.particleContainer.x = this.gameFieldX
-    this.particleContainer.y = this.gameFieldY
+    this.particleContainer.x = this.boardContainer.x
+    this.particleContainer.y = this.boardContainer.y
     this.gameContainer.addChild(this.particleContainer)
     
     // UI container
     this.uiContainer = new Container()
     this.gameContainer.addChild(this.uiContainer)
     
-    // Initialize particle systems
+    // Initialize particle system
     this.particleSystem = new ParticleSystem(this.particleContainer)
-    this.fullscreenParticleSystem = new ParticleSystem(this.fullscreenParticleContainer)
     
     this.drawBoard()
   }
 
   private setupTitle() {
     const titleText = new Text('WhatToDo.Games - BlockFall', {
-      fontSize: 24, // Fixed reasonable size
+      fontSize: 48,
       fill: 0xffffff,
       fontWeight: 'bold',
       dropShadow: true,
@@ -267,7 +212,7 @@ export class TetrisGame {
       dropShadowDistance: 3
     })
     titleText.x = this.app.screen.width / 2 - titleText.width / 2
-    titleText.y = this.gameFieldY - 40
+    titleText.y = 30
     this.gameContainer.addChild(titleText)
   }
 
@@ -324,11 +269,11 @@ export class TetrisGame {
   }
 
   private setupUI() {
-    const rightPanelX = this.uiPanelX
+    const rightPanelX = this.boardContainer.x + (this.BOARD_WIDTH * this.BLOCK_SIZE) + 50
     
     // Score display
     const scoreText = new Text('SCORE: 0', {
-      fontSize: 16, // Fixed reasonable size
+      fontSize: 28,
       fill: 0xffffff,
       fontWeight: 'bold',
       dropShadow: true,
@@ -336,12 +281,12 @@ export class TetrisGame {
       dropShadowBlur: 10
     })
     scoreText.x = rightPanelX
-    scoreText.y = this.gameFieldY + 20
+    scoreText.y = 150
     this.uiContainer.addChild(scoreText)
     
     // Level display
     const levelText = new Text('LEVEL: 1', {
-      fontSize: 16,
+      fontSize: 28,
       fill: 0xffffff,
       fontWeight: 'bold',
       dropShadow: true,
@@ -349,12 +294,12 @@ export class TetrisGame {
       dropShadowBlur: 10
     })
     levelText.x = rightPanelX
-    levelText.y = this.gameFieldY + 60
+    levelText.y = 200
     this.uiContainer.addChild(levelText)
     
     // Lines display
     const linesText = new Text('LINES: 0', {
-      fontSize: 16,
+      fontSize: 28,
       fill: 0xffffff,
       fontWeight: 'bold',
       dropShadow: true,
@@ -362,28 +307,28 @@ export class TetrisGame {
       dropShadowBlur: 10
     })
     linesText.x = rightPanelX
-    linesText.y = this.gameFieldY + 100
+    linesText.y = 250
     this.uiContainer.addChild(linesText)
 
     // Music control hint
     const musicText = new Text('M: Toggle Music', {
-      fontSize: 12,
+      fontSize: 18,
       fill: 0xcccccc,
       fontWeight: 'bold'
     })
     musicText.x = rightPanelX
-    musicText.y = this.gameFieldY + 140
+    musicText.y = 300
     this.uiContainer.addChild(musicText)
     
     // Controls info
     const controlsText = new Text('CONTROLS:\nArrows: Move\nZ/Space: Rotate CCW\nX: Rotate CW\nUp: Hard Drop', {
-      fontSize: 10,
+      fontSize: 16,
       fill: 0x888888,
       fontWeight: 'bold',
-      lineHeight: 12
+      lineHeight: 20
     })
     controlsText.x = rightPanelX
-    controlsText.y = this.gameFieldY + 170
+    controlsText.y = 350
     this.uiContainer.addChild(controlsText)
   }
 
@@ -513,20 +458,11 @@ export class TetrisGame {
       if (this.board[y].every(cell => cell !== 0)) {
         clearedLines.push(y)
         
-        // Create local line explosion effect
+        // Create line explosion effect
         this.particleSystem.createLineExplosion(
           0, 
           y * this.BLOCK_SIZE, 
           this.BOARD_WIDTH * this.BLOCK_SIZE, 
-          0xffffff
-        )
-        
-        // Create fullscreen explosion effect that spreads across entire canvas
-        const globalY = this.gameFieldY + y * this.BLOCK_SIZE
-        this.fullscreenParticleSystem.createMassiveExplosion(
-          this.app.screen.width / 2,
-          globalY,
-          this.app.screen.width,
           0xffffff
         )
         
@@ -688,9 +624,8 @@ export class TetrisGame {
         }
       }
       
-      // Update both particle systems
+      // Update particle system
       this.particleSystem.update()
-      this.fullscreenParticleSystem.update()
       
       this.render()
     })
@@ -723,9 +658,8 @@ export class TetrisGame {
       }
     }
     
-    // Render both particle systems
+    // Render particles
     this.particleSystem.render()
-    this.fullscreenParticleSystem.render()
   }
 
   private drawGlowBlock(x: number, y: number, color: number, glowColor?: number) {
