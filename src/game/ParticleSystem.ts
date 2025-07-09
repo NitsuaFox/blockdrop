@@ -120,11 +120,11 @@ export class ParticleSystem {
 
   public createTetrisExplosion(centerX: number, centerY: number, boardWidth: number, boardHeight: number) {
     // Clear existing particles to make room for the explosion
-    this.particles = []
+    this.clear()
     
-    // MASSIVE CENTRAL EXPLOSION
-    for (let i = 0; i < 60; i++) {
-      const angle = (i / 60) * Math.PI * 2
+    // MASSIVE CENTRAL EXPLOSION (reduced count)
+    for (let i = 0; i < 40; i++) {
+      const angle = (i / 40) * Math.PI * 2
       const speed = 8 + Math.random() * 12
       const particle: Particle = {
         x: centerX,
@@ -132,7 +132,7 @@ export class ParticleSystem {
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         life: 0,
-        maxLife: 60 + Math.random() * 40,
+        maxLife: 40 + Math.random() * 30, // Shorter life
         color: this.getTetrisExplosionColor(),
         size: 3 + Math.random() * 4,
         alpha: 1,
@@ -144,9 +144,9 @@ export class ParticleSystem {
       this.particles.push(particle)
     }
 
-    // SHOCKWAVE RING
-    for (let i = 0; i < 40; i++) {
-      const angle = (i / 40) * Math.PI * 2
+    // SHOCKWAVE RING (reduced count)
+    for (let i = 0; i < 24; i++) {
+      const angle = (i / 24) * Math.PI * 2
       const speed = 15 + Math.random() * 8
       const particle: Particle = {
         x: centerX,
@@ -154,7 +154,7 @@ export class ParticleSystem {
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         life: 0,
-        maxLife: 80,
+        maxLife: 60, // Shorter life
         color: 0xffffff,
         size: 2,
         alpha: 1,
@@ -166,12 +166,12 @@ export class ParticleSystem {
       this.particles.push(particle)
     }
 
-    // SECONDARY EXPLOSIONS (smaller bursts)
-    for (let burst = 0; burst < 8; burst++) {
+    // SECONDARY EXPLOSIONS (reduced count)
+    for (let burst = 0; burst < 5; burst++) {
       const burstX = centerX + (Math.random() - 0.5) * boardWidth
       const burstY = centerY + (Math.random() - 0.5) * boardHeight
       
-      for (let i = 0; i < 15; i++) {
+      for (let i = 0; i < 8; i++) {
         const angle = Math.random() * Math.PI * 2
         const speed = 4 + Math.random() * 8
         const particle: Particle = {
@@ -180,7 +180,7 @@ export class ParticleSystem {
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed,
           life: Math.random() * 20, // Staggered start times
-          maxLife: 50 + Math.random() * 30,
+          maxLife: 40 + Math.random() * 20, // Shorter life
           color: this.getTetrisExplosionColor(),
           size: 2 + Math.random() * 3,
           alpha: 0.8,
@@ -193,15 +193,15 @@ export class ParticleSystem {
       }
     }
 
-    // ASCENDING SPARKS (victory celebration)
-    for (let i = 0; i < 30; i++) {
+    // ASCENDING SPARKS (reduced count)
+    for (let i = 0; i < 20; i++) {
       const particle: Particle = {
         x: centerX + (Math.random() - 0.5) * boardWidth * 0.8,
         y: centerY + boardHeight * 0.3,
         vx: (Math.random() - 0.5) * 6,
         vy: -Math.random() * 15 - 5, // Always going up
         life: 0,
-        maxLife: 100 + Math.random() * 50,
+        maxLife: 80 + Math.random() * 40, // Shorter life
         color: this.getTetrisExplosionColor(),
         size: 1 + Math.random() * 2,
         alpha: 1,
@@ -234,6 +234,11 @@ export class ParticleSystem {
 
 
   public update() {
+    // Enforce hard particle limit for performance
+    if (this.particles.length > this.MAX_PARTICLES) {
+      this.particles.splice(0, this.particles.length - this.MAX_PARTICLES)
+    }
+
     // Update all particles
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const particle = this.particles[i]

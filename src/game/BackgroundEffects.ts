@@ -90,6 +90,12 @@ export class BackgroundEffects {
 
     // Update shapes
     this.updateShapes(frequencyData)
+    
+    // Safety check: if we have too few shapes, regenerate some
+    const normalShapes = this.shapes.filter(shape => !shape.isBlasted).length
+    if (normalShapes < 8) {
+      this.addNewShapes(16 - this.shapes.length)
+    }
   }
 
   private updateShapes(frequencyData: { bass: number; mid: number; treble: number; overall: number } | null) {
@@ -109,28 +115,33 @@ export class BackgroundEffects {
         shape.vy += 0.2 // Gravity
         
         // Start restoration after delay
-        if (shape.blastTime > (shape.restoreStartTime || 120)) {
-          const restoreProgress = (shape.blastTime - (shape.restoreStartTime || 120)) / 120
-          const easeProgress = 1 - Math.pow(1 - Math.min(restoreProgress, 1), 3) // Ease out cubic
+        if (shape.blastTime > (shape.restoreStartTime || 60)) {
+          const restoreFrames = 180 // 3 seconds to restore
+          const restoreProgress = Math.min((shape.blastTime - (shape.restoreStartTime || 60)) / restoreFrames, 1)
+          const easeProgress = 1 - Math.pow(1 - restoreProgress, 3) // Ease out cubic
           
-          // Restore position
+          // Restore position with stronger pull
           if (shape.originalX !== undefined && shape.originalY !== undefined) {
-            shape.x = shape.x + (shape.originalX - shape.x) * easeProgress * 0.05
-            shape.y = shape.y + (shape.originalY - shape.y) * easeProgress * 0.05
+            const pullStrength = 0.02 + easeProgress * 0.08
+            shape.x = shape.x + (shape.originalX - shape.x) * pullStrength
+            shape.y = shape.y + (shape.originalY - shape.y) * pullStrength
           }
           
-          // Restore velocity
+          // Restore velocity with stronger force
           if (shape.originalVx !== undefined && shape.originalVy !== undefined) {
-            shape.vx = shape.vx + (shape.originalVx - shape.vx) * easeProgress * 0.05
-            shape.vy = shape.vy + (shape.originalVy - shape.vy) * easeProgress * 0.05
+            const velocityRestore = 0.01 + easeProgress * 0.04
+            shape.vx = shape.vx + (shape.originalVx - shape.vx) * velocityRestore
+            shape.vy = shape.vy + (shape.originalVy - shape.vy) * velocityRestore
           }
           
-          // Restore rotation speed
-          shape.rotationSpeed *= (1 - easeProgress * 0.05)
+          // Restore rotation speed gradually
+          shape.rotationSpeed *= (1 - easeProgress * 0.02)
           
-          // Restore scale and alpha
-          shape.targetScale *= (1 - easeProgress * 0.02)
-          shape.alpha *= (1 - easeProgress * 0.02)
+          // Restore scale and alpha gradually
+          const originalScale = 0.2 + Math.random() * 0.8
+          const originalAlpha = 0.05 + Math.random() * 0.15
+          shape.targetScale = shape.targetScale + (originalScale - shape.targetScale) * easeProgress * 0.01
+          shape.alpha = shape.alpha + (originalAlpha - shape.alpha) * easeProgress * 0.01
           
           // End blast effect when fully restored
           if (restoreProgress >= 1) {
@@ -141,6 +152,10 @@ export class BackgroundEffects {
             shape.originalY = undefined
             shape.originalVx = undefined
             shape.originalVy = undefined
+            // Reset to fresh random values
+            shape.targetScale = 0.2 + Math.random() * 0.8
+            shape.alpha = 0.05 + Math.random() * 0.15
+            shape.rotationSpeed = (Math.random() - 0.5) * 0.04
             console.log('Shape restored to normal!')
           }
         }
@@ -331,7 +346,7 @@ export class BackgroundEffects {
       shape.originalVy = shape.vy
       shape.isBlasted = true
       shape.blastTime = 0
-      shape.restoreStartTime = 120 + Math.random() * 60 // Start restoring after 2-3 seconds
+      shape.restoreStartTime = 60 + Math.random() * 30 // Start restoring after 1-1.5 seconds (shorter)
       
       // Calculate blast direction and distance
       const dx = shape.x - blastCenterX
@@ -340,20 +355,47 @@ export class BackgroundEffects {
       const normalizedDx = dx / (distance || 1)
       const normalizedDy = dy / (distance || 1)
       
-      // Apply massive blast force (inverse distance for stronger effect on closer shapes)
-      const blastForce = 25 + (500 / Math.max(distance, 50))
+      // Apply moderate blast force (reduced to prevent shapes from flying too far)
+      const blastForce = 10 + (200 / Math.max(distance, 50))
       shape.vx = normalizedDx * blastForce * (0.8 + Math.random() * 0.4)
       shape.vy = normalizedDy * blastForce * (0.8 + Math.random() * 0.4)
       
-      // Add some chaos and spin
-      shape.vx += (Math.random() - 0.5) * 10
-      shape.vy += (Math.random() - 0.5) * 10
-      shape.rotationSpeed = (Math.random() - 0.5) * 0.8
+      // Add some chaos and spin (reduced)
+      shape.vx += (Math.random() - 0.5) * 5
+      shape.vy += (Math.random() - 0.5) * 5
+      shape.rotationSpeed = (Math.random() - 0.5) * 0.4
       
       // Make them more visible during blast
-      shape.alpha = Math.min(0.8, shape.alpha * 3)
-      shape.targetScale = shape.scale * (2 + Math.random())
+      shape.alpha = Math.min(0.6, shape.alpha * 2)
+      shape.targetScale = shape.scale * (1.5 + Math.random() * 0.5)
     })
+  }
+
+  private addNewShapes(count: number) {
+    if (count <= 0) return
+    
+    const shapeTypes: ('circle' | 'triangle' | 'diamond' | 'hexagon')[] = ['circle', 'triangle', 'diamond', 'hexagon']
+    
+    for (let i = 0; i < count; i++) {
+      const shape: FloatingShape = {
+        x: Math.random() * this.screenWidth,
+        y: Math.random() * this.screenHeight,
+        vx: (Math.random() - 0.5) * 0.8,
+        vy: (Math.random() - 0.5) * 0.8,
+        rotation: Math.random() * Math.PI * 2,
+        rotationSpeed: (Math.random() - 0.5) * 0.04,
+        scale: 0.2 + Math.random() * 0.8,
+        targetScale: 0.2 + Math.random() * 0.8,
+        color: this.getRandomShapeColor(),
+        alpha: 0.05 + Math.random() * 0.15,
+        type: shapeTypes[Math.floor(Math.random() * shapeTypes.length)],
+        size: 15 + Math.random() * 50,
+        pulsePhase: Math.random() * Math.PI * 2
+      }
+      this.shapes.push(shape)
+    }
+    
+    console.log('Regenerated', count, 'background shapes. Total:', this.shapes.length)
   }
 
   public clear() {
