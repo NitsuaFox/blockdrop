@@ -42,6 +42,8 @@ export class TetrisGame {
   private backgroundMusic: HTMLAudioElement | null = null
   private musicWaitingForInteraction = false
   private tetrisSound: HTMLAudioElement | null = null
+  private moveSound: HTMLAudioElement | null = null
+  private rotateSound: HTMLAudioElement | null = null
   private gameFieldBackground!: Graphics
   private gameBorder!: Graphics
   
@@ -445,6 +447,13 @@ export class TetrisGame {
       this.tetrisSound = new Audio('/sounds/tetris.mp3')
       this.tetrisSound.volume = 0.8
       
+      // Setup move and rotate sound effects
+      this.moveSound = new Audio('/sounds/move.mp3')
+      this.moveSound.volume = 0.4
+      
+      this.rotateSound = new Audio('/sounds/rotate.mp3')
+      this.rotateSound.volume = 0.4
+      
       console.log('Music file loaded, attempting to play...')
       
       // Set up event listeners for audio analyzer connection
@@ -530,6 +539,30 @@ export class TetrisGame {
       console.log('TETRIS! Sound effect played')
     } catch (error) {
       console.log('Could not play Tetris sound effect:', error)
+    }
+  }
+
+  private playMoveSound() {
+    if (!this.moveSound) return
+    
+    try {
+      // Reset sound to beginning and play
+      this.moveSound.currentTime = 0
+      this.moveSound.play().catch(console.error)
+    } catch (error) {
+      console.log('Could not play move sound effect:', error)
+    }
+  }
+
+  private playRotateSound() {
+    if (!this.rotateSound) return
+    
+    try {
+      // Reset sound to beginning and play
+      this.rotateSound.currentTime = 0
+      this.rotateSound.play().catch(console.error)
+    } catch (error) {
+      console.log('Could not play rotate sound effect:', error)
     }
   }
 
@@ -774,6 +807,10 @@ export class TetrisGame {
         this.currentPiece.y = testPiece.y
         this.currentPiece.rotation = toRotation
         this.updateGhostPiece() // Update ghost when piece rotates
+        
+        // Play rotate sound effect
+        this.playRotateSound()
+        
         return
       }
     }
@@ -788,6 +825,12 @@ export class TetrisGame {
       this.currentPiece.x += dx
       this.currentPiece.y += dy
       this.updateGhostPiece() // Update ghost when piece moves
+      
+      // Play move sound for horizontal movement only
+      if (dx !== 0) {
+        this.playMoveSound()
+      }
+      
       return true
     }
     return false
@@ -1425,6 +1468,17 @@ export class TetrisGame {
     if (this.tetrisSound) {
       this.tetrisSound.pause()
       this.tetrisSound = null
+    }
+    
+    // Stop move and rotate sound effects
+    if (this.moveSound) {
+      this.moveSound.pause()
+      this.moveSound = null
+    }
+    
+    if (this.rotateSound) {
+      this.rotateSound.pause()
+      this.rotateSound = null
     }
     
     // Disconnect audio analyzer
