@@ -61,11 +61,15 @@ export default function Home() {
       minHeight: '100vh',
       backgroundColor: '#000',
       padding: '10px',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      touchAction: 'none', // Prevent pull-to-refresh
+      userSelect: 'none', // Prevent text selection
+      WebkitUserSelect: 'none'
     }}>
       <div ref={gameRef} style={{
         maxWidth: '100%',
-        maxHeight: '100%'
+        maxHeight: '100%',
+        touchAction: 'manipulation' // Allow touch but prevent default gestures
       }} />
     </div>
   )

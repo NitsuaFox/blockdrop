@@ -13,7 +13,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body style={{ margin: 0, padding: 0, backgroundColor: '#000' }}>
+      <body style={{ 
+        margin: 0, 
+        padding: 0, 
+        backgroundColor: '#000',
+        touchAction: 'none',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        overscrollBehavior: 'none' // Prevent pull-to-refresh
+      }}>
         {children}
       </body>
     </html>

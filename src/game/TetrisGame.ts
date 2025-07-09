@@ -216,7 +216,7 @@ export class TetrisGame {
     this.boardContainer = new Container()
     if (isMobile) {
       this.boardContainer.x = (this.app.screen.width - (this.BOARD_WIDTH * blockSize)) / 2
-      this.boardContainer.y = 45 // Move up even more for mobile
+      this.boardContainer.y = 35 // Move up even more for mobile
     } else {
       this.boardContainer.x = (this.app.screen.width - (this.BOARD_WIDTH * blockSize)) / 2
       this.boardContainer.y = 120
@@ -839,6 +839,19 @@ export class TetrisGame {
           break
       }
     })
+    
+    // Prevent page refresh on mobile
+    window.addEventListener('beforeunload', (e) => {
+      if (this.gameRunning) {
+        e.preventDefault()
+        return ''
+      }
+    })
+    
+    // Prevent pull-to-refresh and other gestures
+    document.addEventListener('touchmove', (e) => {
+      e.preventDefault()
+    }, { passive: false })
   }
 
   private setupTouchControls() {
