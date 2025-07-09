@@ -49,6 +49,7 @@ export class TetrisGame {
   private readonly BOARD_WIDTH = 10
   private readonly BOARD_HEIGHT = 20
   private readonly BLOCK_SIZE = 32 // Fixed size
+  private readonly MOBILE_BLOCK_SIZE = 24 // Smaller for mobile
   
   // SRS Tetromino definitions with all 4 rotation states
   private tetrominoes = {
@@ -208,14 +209,15 @@ export class TetrisGame {
     
     // Check if mobile layout
     const isMobile = this.app.screen.width <= 768
+    const blockSize = isMobile ? this.MOBILE_BLOCK_SIZE : this.BLOCK_SIZE
     
     // Board container - responsive positioning
     this.boardContainer = new Container()
     if (isMobile) {
-      this.boardContainer.x = (this.app.screen.width - (this.BOARD_WIDTH * this.BLOCK_SIZE)) / 2
-      this.boardContainer.y = 80
+      this.boardContainer.x = (this.app.screen.width - (this.BOARD_WIDTH * blockSize)) / 2
+      this.boardContainer.y = 60 // Move up more for mobile
     } else {
-      this.boardContainer.x = (this.app.screen.width - (this.BOARD_WIDTH * this.BLOCK_SIZE)) / 2
+      this.boardContainer.x = (this.app.screen.width - (this.BOARD_WIDTH * blockSize)) / 2
       this.boardContainer.y = 120
     }
     this.gameContainer.addChild(this.boardContainer)
@@ -249,11 +251,11 @@ export class TetrisGame {
     this.nextPieceContainer = new Container()
     if (isMobile) {
       // Position next pieces on the right side for mobile
-      this.nextPieceContainer.x = this.boardContainer.x + (this.BOARD_WIDTH * this.BLOCK_SIZE) + 10
+      this.nextPieceContainer.x = this.boardContainer.x + (this.BOARD_WIDTH * blockSize) + 10
       this.nextPieceContainer.y = this.boardContainer.y
     } else {
       // Position one grid space left of the game board, aligned with top
-      this.nextPieceContainer.x = this.boardContainer.x - (4 * this.BLOCK_SIZE + this.BLOCK_SIZE) // 4 blocks wide + 1 block gap
+      this.nextPieceContainer.x = this.boardContainer.x - (4 * blockSize + blockSize) // 4 blocks wide + 1 block gap
       this.nextPieceContainer.y = this.boardContainer.y
     }
     this.gameContainer.addChild(this.nextPieceContainer)
@@ -272,10 +274,11 @@ export class TetrisGame {
 
   private setupTitle() {
     const isMobile = this.app.screen.width <= 768
+    const blockSize = isMobile ? this.MOBILE_BLOCK_SIZE : this.BLOCK_SIZE
     
     // Main game title
     const titleText = new Text('BlockFall', {
-      fontSize: isMobile ? 32 : 48,
+      fontSize: isMobile ? 28 : 48,
       fill: 0xffffff,
       fontWeight: 'bold',
       dropShadow: true,
@@ -284,12 +287,12 @@ export class TetrisGame {
       dropShadowDistance: 3
     })
     titleText.x = this.app.screen.width / 2 - titleText.width / 2
-    titleText.y = isMobile ? 20 : 30
+    titleText.y = isMobile ? 10 : 30
     this.gameContainer.addChild(titleText)
     
     // Credit line under the game area
     const creditText = new Text('By AustinCreative.UK', {
-      fontSize: isMobile ? 12 : 16,
+      fontSize: isMobile ? 10 : 16,
       fill: 0xcccccc,
       fontWeight: 'normal',
       dropShadow: true,
@@ -298,40 +301,42 @@ export class TetrisGame {
       dropShadowDistance: 1
     })
     creditText.x = this.app.screen.width / 2 - creditText.width / 2
-    creditText.y = this.boardContainer.y + (this.BOARD_HEIGHT * this.BLOCK_SIZE) + (isMobile ? 10 : 20)
+    creditText.y = this.boardContainer.y + (this.BOARD_HEIGHT * blockSize) + (isMobile ? 5 : 20)
     this.gameContainer.addChild(creditText)
   }
 
   private drawBoard() {
     const boardBg = new Graphics()
+    const isMobile = this.app.screen.width <= 768
+    const blockSize = isMobile ? this.MOBILE_BLOCK_SIZE : this.BLOCK_SIZE
     
     // Multiple layered background for depth
     // Outer glow effect
     for (let i = 20; i >= 1; i--) {
       boardBg.beginFill(0x001133, 0.02)
-      boardBg.drawRect(-5 - i, -5 - i, this.BOARD_WIDTH * this.BLOCK_SIZE + 10 + i*2, this.BOARD_HEIGHT * this.BLOCK_SIZE + 10 + i*2)
+      boardBg.drawRect(-5 - i, -5 - i, this.BOARD_WIDTH * blockSize + 10 + i*2, this.BOARD_HEIGHT * blockSize + 10 + i*2)
       boardBg.endFill()
     }
     
     // Main background with gradient effect
     boardBg.beginFill(0x0f0f1f, 0.9)
-    boardBg.drawRect(-5, -5, this.BOARD_WIDTH * this.BLOCK_SIZE + 10, this.BOARD_HEIGHT * this.BLOCK_SIZE + 10)
+    boardBg.drawRect(-5, -5, this.BOARD_WIDTH * blockSize + 10, this.BOARD_HEIGHT * blockSize + 10)
     boardBg.endFill()
     
     // Inner shadow
     boardBg.beginFill(0x000000, 0.3)
-    boardBg.drawRect(0, 0, this.BOARD_WIDTH * this.BLOCK_SIZE, this.BOARD_HEIGHT * this.BLOCK_SIZE)
+    boardBg.drawRect(0, 0, this.BOARD_WIDTH * blockSize, this.BOARD_HEIGHT * blockSize)
     boardBg.endFill()
     
     // Grid lines with subtle glow
     boardBg.lineStyle(1, 0x1a1a3a, 0.3)
     for (let x = 0; x <= this.BOARD_WIDTH; x++) {
-      boardBg.moveTo(x * this.BLOCK_SIZE, 0)
-      boardBg.lineTo(x * this.BLOCK_SIZE, this.BOARD_HEIGHT * this.BLOCK_SIZE)
+      boardBg.moveTo(x * blockSize, 0)
+      boardBg.lineTo(x * blockSize, this.BOARD_HEIGHT * blockSize)
     }
     for (let y = 0; y <= this.BOARD_HEIGHT; y++) {
-      boardBg.moveTo(0, y * this.BLOCK_SIZE)
-      boardBg.lineTo(this.BOARD_WIDTH * this.BLOCK_SIZE, y * this.BLOCK_SIZE)
+      boardBg.moveTo(0, y * blockSize)
+      boardBg.lineTo(this.BOARD_WIDTH * blockSize, y * blockSize)
     }
     
     // Animated neon border
@@ -340,24 +345,25 @@ export class TetrisGame {
     
     // Multiple border layers for amazing glow
     boardBg.lineStyle(8, 0x00ffff, 0.1)
-    boardBg.drawRect(-8, -8, this.BOARD_WIDTH * this.BLOCK_SIZE + 16, this.BOARD_HEIGHT * this.BLOCK_SIZE + 16)
+    boardBg.drawRect(-8, -8, this.BOARD_WIDTH * blockSize + 16, this.BOARD_HEIGHT * blockSize + 16)
     
     boardBg.lineStyle(4, 0x00ffff, 0.3)
-    boardBg.drawRect(-6, -6, this.BOARD_WIDTH * this.BLOCK_SIZE + 12, this.BOARD_HEIGHT * this.BLOCK_SIZE + 12)
+    boardBg.drawRect(-6, -6, this.BOARD_WIDTH * blockSize + 12, this.BOARD_HEIGHT * blockSize + 12)
     
     boardBg.lineStyle(2, 0x00ffff, glowIntensity)
-    boardBg.drawRect(-4, -4, this.BOARD_WIDTH * this.BLOCK_SIZE + 8, this.BOARD_HEIGHT * this.BLOCK_SIZE + 8)
+    boardBg.drawRect(-4, -4, this.BOARD_WIDTH * blockSize + 8, this.BOARD_HEIGHT * blockSize + 8)
     
     boardBg.lineStyle(1, 0xffffff, 1)
-    boardBg.drawRect(-2, -2, this.BOARD_WIDTH * this.BLOCK_SIZE + 4, this.BOARD_HEIGHT * this.BLOCK_SIZE + 4)
+    boardBg.drawRect(-2, -2, this.BOARD_WIDTH * blockSize + 4, this.BOARD_HEIGHT * blockSize + 4)
     
     this.boardContainer.addChild(boardBg)
   }
 
   private setupUI() {
     const isMobile = this.app.screen.width <= 768
-    const rightPanelX = isMobile ? 10 : this.boardContainer.x + (this.BOARD_WIDTH * this.BLOCK_SIZE) + 50
-    const startY = isMobile ? this.boardContainer.y + (this.BOARD_HEIGHT * this.BLOCK_SIZE) + 60 : 150
+    const blockSize = isMobile ? this.MOBILE_BLOCK_SIZE : this.BLOCK_SIZE
+    const rightPanelX = isMobile ? 10 : this.boardContainer.x + (this.BOARD_WIDTH * blockSize) + 50
+    const startY = isMobile ? this.boardContainer.y + (this.BOARD_HEIGHT * blockSize) + 40 : 150
     
     // Score display
     const scoreText = new Text('SCORE: 0', {
@@ -668,10 +674,12 @@ export class TetrisGame {
         clearedLines.push(y)
         
         // Create line explosion effect
+        const isMobile = this.app.screen.width <= 768
+        const blockSize = isMobile ? this.MOBILE_BLOCK_SIZE : this.BLOCK_SIZE
         this.particleSystem.createLineExplosion(
           0, 
-          y * this.BLOCK_SIZE, 
-          this.BOARD_WIDTH * this.BLOCK_SIZE, 
+          y * blockSize, 
+          this.BOARD_WIDTH * blockSize, 
           0xffffff
         )
         
@@ -910,11 +918,13 @@ export class TetrisGame {
       
       // Very subtle glow trail for current piece (much less frequent)
       if (this.currentPiece && Math.random() < 0.05) {
+        const isMobile = this.app.screen.width <= 768
+        const blockSize = isMobile ? this.MOBILE_BLOCK_SIZE : this.BLOCK_SIZE
         for (let y = 0; y < this.currentPiece.shape.length; y++) {
           for (let x = 0; x < this.currentPiece.shape[y].length; x++) {
             if (this.currentPiece.shape[y][x]) {
-              const drawX = (this.currentPiece.x + x) * this.BLOCK_SIZE
-              const drawY = (this.currentPiece.y + y) * this.BLOCK_SIZE
+              const drawX = (this.currentPiece.x + x) * blockSize
+              const drawY = (this.currentPiece.y + y) * blockSize
               this.particleSystem.createGlowTrail(drawX, drawY, this.currentPiece.glowColor)
             }
           }
@@ -942,6 +952,9 @@ export class TetrisGame {
 
   private render() {
     try {
+      const isMobile = this.app.screen.width <= 768
+      const blockSize = isMobile ? this.MOBILE_BLOCK_SIZE : this.BLOCK_SIZE
+      
       // Clear previous render
       this.boardContainer.removeChildren()
       this.drawBoard()
@@ -950,7 +963,7 @@ export class TetrisGame {
       for (let y = 0; y < this.BOARD_HEIGHT; y++) {
         for (let x = 0; x < this.BOARD_WIDTH; x++) {
           if (this.board[y][x]) {
-            this.drawGlowBlock(x * this.BLOCK_SIZE, y * this.BLOCK_SIZE, this.board[y][x])
+            this.drawGlowBlock(x * blockSize, y * blockSize, this.board[y][x], undefined, blockSize)
           }
         }
       }
@@ -960,9 +973,9 @@ export class TetrisGame {
         for (let y = 0; y < this.ghostPiece.shape.length; y++) {
           for (let x = 0; x < this.ghostPiece.shape[y].length; x++) {
             if (this.ghostPiece.shape[y][x]) {
-              const drawX = (this.ghostPiece.x + x) * this.BLOCK_SIZE
-              const drawY = (this.ghostPiece.y + y) * this.BLOCK_SIZE
-              this.drawGhostBlock(drawX, drawY, this.ghostPiece.color)
+              const drawX = (this.ghostPiece.x + x) * blockSize
+              const drawY = (this.ghostPiece.y + y) * blockSize
+              this.drawGhostBlock(drawX, drawY, this.ghostPiece.color, blockSize)
             }
           }
         }
@@ -973,9 +986,9 @@ export class TetrisGame {
         for (let y = 0; y < this.currentPiece.shape.length; y++) {
           for (let x = 0; x < this.currentPiece.shape[y].length; x++) {
             if (this.currentPiece.shape[y][x]) {
-              const drawX = (this.currentPiece.x + x) * this.BLOCK_SIZE
-              const drawY = (this.currentPiece.y + y) * this.BLOCK_SIZE
-              this.drawGlowBlock(drawX, drawY, this.currentPiece.color, this.currentPiece.glowColor)
+              const drawX = (this.currentPiece.x + x) * blockSize
+              const drawY = (this.currentPiece.y + y) * blockSize
+              this.drawGlowBlock(drawX, drawY, this.currentPiece.color, this.currentPiece.glowColor, blockSize)
             }
           }
         }
@@ -994,7 +1007,7 @@ export class TetrisGame {
     }
   }
 
-  private drawGlowBlock(x: number, y: number, color: number, glowColor?: number) {
+  private drawGlowBlock(x: number, y: number, color: number, glowColor?: number, blockSize: number = this.BLOCK_SIZE) {
     const blockContainer = new Container()
     
     // Outer glow layers for amazing effect
@@ -1003,7 +1016,7 @@ export class TetrisGame {
         const glow = new Graphics()
         const alpha = 0.15 - (i * 0.015)
         glow.beginFill(glowColor, alpha)
-        glow.drawRect(x - i*2, y - i*2, this.BLOCK_SIZE + i*4, this.BLOCK_SIZE + i*4)
+        glow.drawRect(x - i*2, y - i*2, blockSize + i*4, blockSize + i*4)
         glow.endFill()
         blockContainer.addChild(glow)
       }
@@ -1012,66 +1025,66 @@ export class TetrisGame {
     // Deep shadow for 3D depth
     const shadow = new Graphics()
     shadow.beginFill(0x000000, 0.6)
-    shadow.drawRect(x + 3, y + 3, this.BLOCK_SIZE, this.BLOCK_SIZE)
+    shadow.drawRect(x + 3, y + 3, blockSize, blockSize)
     shadow.endFill()
     blockContainer.addChild(shadow)
     
     // Glass base layer with transparency
     const glassBase = new Graphics()
     glassBase.beginFill(color, 0.85)
-    glassBase.drawRect(x, y, this.BLOCK_SIZE, this.BLOCK_SIZE)
+    glassBase.drawRect(x, y, blockSize, blockSize)
     glassBase.endFill()
     blockContainer.addChild(glassBase)
     
     // Glass reflection layers
     const topReflection = new Graphics()
     topReflection.beginFill(0xffffff, 0.6)
-    topReflection.drawRect(x + 2, y + 1, this.BLOCK_SIZE - 4, 8)
+    topReflection.drawRect(x + 2, y + 1, blockSize - 4, 8)
     topReflection.endFill()
     blockContainer.addChild(topReflection)
     
     const leftReflection = new Graphics()
     leftReflection.beginFill(0xffffff, 0.3)
-    leftReflection.drawRect(x + 1, y + 2, 6, this.BLOCK_SIZE - 4)
+    leftReflection.drawRect(x + 1, y + 2, 6, blockSize - 4)
     leftReflection.endFill()
     blockContainer.addChild(leftReflection)
     
     // Specular highlight (glass shine)
     const specular = new Graphics()
     specular.beginFill(0xffffff, 0.8)
-    specular.drawRect(x + 3, y + 3, this.BLOCK_SIZE - 12, 3)
+    specular.drawRect(x + 3, y + 3, blockSize - 12, 3)
     specular.endFill()
     blockContainer.addChild(specular)
     
     // Glass depth shadows
     const bottomShadow = new Graphics()
     bottomShadow.beginFill(0x000000, 0.4)
-    bottomShadow.drawRect(x + 2, y + this.BLOCK_SIZE - 6, this.BLOCK_SIZE - 4, 4)
+    bottomShadow.drawRect(x + 2, y + blockSize - 6, blockSize - 4, 4)
     bottomShadow.endFill()
     blockContainer.addChild(bottomShadow)
     
     const rightShadow = new Graphics()
     rightShadow.beginFill(0x000000, 0.4)
-    rightShadow.drawRect(x + this.BLOCK_SIZE - 6, y + 2, 4, this.BLOCK_SIZE - 4)
+    rightShadow.drawRect(x + blockSize - 6, y + 2, 4, blockSize - 4)
     rightShadow.endFill()
     blockContainer.addChild(rightShadow)
     
     // Crystal-like border with refraction effect
     const border = new Graphics()
     border.lineStyle(3, 0xffffff, 0.8)
-    border.drawRect(x, y, this.BLOCK_SIZE, this.BLOCK_SIZE)
+    border.drawRect(x, y, blockSize, blockSize)
     border.lineStyle(1, glowColor || color, 1.0)
-    border.drawRect(x + 1, y + 1, this.BLOCK_SIZE - 2, this.BLOCK_SIZE - 2)
+    border.drawRect(x + 1, y + 1, blockSize - 2, blockSize - 2)
     border.lineStyle(1, 0xffffff, 0.5)
-    border.drawRect(x + 2, y + 2, this.BLOCK_SIZE - 4, this.BLOCK_SIZE - 4)
+    border.drawRect(x + 2, y + 2, blockSize - 4, blockSize - 4)
     blockContainer.addChild(border)
     
     // Animated sparkles for glass effect
     if (Math.random() < 0.15) {
       const sparkle = new Graphics()
       sparkle.beginFill(0xffffff, 0.9)
-      const sparkleX = x + 4 + Math.random() * (this.BLOCK_SIZE - 8)
-      const sparkleY = y + 4 + Math.random() * (this.BLOCK_SIZE - 8)
+      const sparkleX = x + 4 + Math.random() * (blockSize - 8)
+      const sparkleY = y + 4 + Math.random() * (blockSize - 8)
       sparkle.drawCircle(sparkleX, sparkleY, 1.5)
       sparkle.endFill()
       blockContainer.addChild(sparkle)
@@ -1080,29 +1093,31 @@ export class TetrisGame {
     this.boardContainer.addChild(blockContainer)
   }
 
-  private drawGhostBlock(x: number, y: number, color: number) {
+  private drawGhostBlock(x: number, y: number, color: number, blockSize: number = this.BLOCK_SIZE) {
     const ghostContainer = new Container()
     
     // Subtle ghost outline
     const ghostOutline = new Graphics()
     ghostOutline.lineStyle(2, color, 0.4)
-    ghostOutline.drawRect(x + 2, y + 2, this.BLOCK_SIZE - 4, this.BLOCK_SIZE - 4)
+    ghostOutline.drawRect(x + 2, y + 2, blockSize - 4, blockSize - 4)
     ghostContainer.addChild(ghostOutline)
     
     // Semi-transparent fill
     const ghostFill = new Graphics()
     ghostFill.beginFill(color, 0.15)
-    ghostFill.drawRect(x + 3, y + 3, this.BLOCK_SIZE - 6, this.BLOCK_SIZE - 6)
+    ghostFill.drawRect(x + 3, y + 3, blockSize - 6, blockSize - 6)
     ghostFill.endFill()
     ghostContainer.addChild(ghostFill)
     
     // Dotted pattern for ghost effect
-    for (let i = 0; i < 3; i++) {
-      for (let j = 0; j < 3; j++) {
+    const dotSpacing = Math.max(4, blockSize / 8)
+    const dotCount = Math.floor(blockSize / dotSpacing) - 1
+    for (let i = 0; i < dotCount; i++) {
+      for (let j = 0; j < dotCount; j++) {
         if ((i + j) % 2 === 0) {
           const dot = new Graphics()
           dot.beginFill(color, 0.3)
-          dot.drawCircle(x + 6 + i * 6, y + 6 + j * 6, 1)
+          dot.drawCircle(x + dotSpacing + i * dotSpacing, y + dotSpacing + j * dotSpacing, 1)
           dot.endFill()
           ghostContainer.addChild(dot)
         }
@@ -1172,9 +1187,11 @@ export class TetrisGame {
     const alpha = 0.05 + intensity * 0.15 // Very subtle, range: 0.05 to 0.2
     
     // Gradient background that pulses with music
-    const bgWidth = this.BOARD_WIDTH * this.BLOCK_SIZE + 40
-    const centerX = this.boardContainer.x + (this.BOARD_WIDTH * this.BLOCK_SIZE) / 2
-    const centerY = this.boardContainer.y + (this.BOARD_HEIGHT * this.BLOCK_SIZE) / 2
+    const isMobile = this.app.screen.width <= 768
+    const blockSize = isMobile ? this.MOBILE_BLOCK_SIZE : this.BLOCK_SIZE
+    const bgWidth = this.BOARD_WIDTH * blockSize + 40
+    const centerX = this.boardContainer.x + (this.BOARD_WIDTH * blockSize) / 2
+    const centerY = this.boardContainer.y + (this.BOARD_HEIGHT * blockSize) / 2
     
     // Create radial gradient effect
     for (let i = 8; i >= 1; i--) {
@@ -1190,10 +1207,12 @@ export class TetrisGame {
   private updateGameBorder(bass: number, mid: number, treble: number) {
     this.gameBorder.clear()
     
+    const isMobile = this.app.screen.width <= 768
+    const blockSize = isMobile ? this.MOBILE_BLOCK_SIZE : this.BLOCK_SIZE
     const boardX = this.boardContainer.x
     const boardY = this.boardContainer.y
-    const boardWidth = this.BOARD_WIDTH * this.BLOCK_SIZE
-    const boardHeight = this.BOARD_HEIGHT * this.BLOCK_SIZE
+    const boardWidth = this.BOARD_WIDTH * blockSize
+    const boardHeight = this.BOARD_HEIGHT * blockSize
     
     // Bass - thick outer glow (red-orange)
     if (bass > 0.1) {
@@ -1246,9 +1265,11 @@ export class TetrisGame {
     // No title text needed
     
     // Box dimensions to match game grid (4x4 blocks)
-    const boxWidth = 4 * this.BLOCK_SIZE
-    const boxHeight = 4 * this.BLOCK_SIZE
-    const boxGap = this.BLOCK_SIZE // 1 grid space gap
+    const isMobile = this.app.screen.width <= 768
+    const blockSize = isMobile ? this.MOBILE_BLOCK_SIZE : this.BLOCK_SIZE
+    const boxWidth = 4 * blockSize
+    const boxHeight = 4 * blockSize
+    const boxGap = blockSize // 1 grid space gap
     
     // Render each next piece in a box
     this.nextPieces.forEach((piece, index) => {
@@ -1305,7 +1326,7 @@ export class TetrisGame {
       boxContainer.addChild(boxBg)
       
       // Calculate piece position within box (centered, smaller blocks)
-      const pieceSize = this.BLOCK_SIZE * 0.7 // Smaller than game blocks
+      const pieceSize = blockSize * 0.7 // Smaller than game blocks
       const offsetX = (boxWidth - piece.shape[0].length * pieceSize) / 2
       const offsetY = (boxHeight - piece.shape.length * pieceSize) / 2
       
