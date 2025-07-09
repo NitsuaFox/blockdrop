@@ -41,6 +41,7 @@ export class TetrisGame {
   private gameRunning = true
   private backgroundMusic: HTMLAudioElement | null = null
   private musicWaitingForInteraction = false
+  private tetrisSound: HTMLAudioElement | null = null
   private gameFieldBackground!: Graphics
   private gameBorder!: Graphics
   
@@ -440,6 +441,10 @@ export class TetrisGame {
       this.backgroundMusic.loop = true
       this.backgroundMusic.volume = 0.6
       
+      // Setup Tetris sound effect
+      this.tetrisSound = new Audio('/sounds/tetris.mp3')
+      this.tetrisSound.volume = 0.8
+      
       console.log('Music file loaded, attempting to play...')
       
       // Set up event listeners for audio analyzer connection
@@ -512,6 +517,19 @@ export class TetrisGame {
       this.backgroundMusic.play().catch(console.error)
     } else {
       this.backgroundMusic.pause()
+    }
+  }
+
+  private playTetrisSound() {
+    if (!this.tetrisSound) return
+    
+    try {
+      // Reset sound to beginning and play
+      this.tetrisSound.currentTime = 0
+      this.tetrisSound.play().catch(console.error)
+      console.log('TETRIS! Sound effect played')
+    } catch (error) {
+      console.log('Could not play Tetris sound effect:', error)
     }
   }
 
@@ -695,6 +713,12 @@ export class TetrisGame {
       this.score += this.calculateScore(linesCleared)
       this.level = Math.floor(this.lines / 10) + 1
       this.dropInterval = Math.max(50, 1000 - (this.level - 1) * 50)
+      
+      // Play Tetris sound effect for 4-line clear
+      if (linesCleared === 4) {
+        this.playTetrisSound()
+      }
+      
       this.updateUI()
     }
   }
@@ -1382,6 +1406,12 @@ export class TetrisGame {
     if (this.backgroundMusic) {
       this.backgroundMusic.pause()
       this.backgroundMusic = null
+    }
+    
+    // Stop Tetris sound effect
+    if (this.tetrisSound) {
+      this.tetrisSound.pause()
+      this.tetrisSound = null
     }
     
     // Disconnect audio analyzer
