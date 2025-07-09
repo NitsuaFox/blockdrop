@@ -118,6 +118,120 @@ export class ParticleSystem {
     }
   }
 
+  public createTetrisExplosion(centerX: number, centerY: number, boardWidth: number, boardHeight: number) {
+    // Clear existing particles to make room for the explosion
+    this.particles = []
+    
+    // MASSIVE CENTRAL EXPLOSION
+    for (let i = 0; i < 60; i++) {
+      const angle = (i / 60) * Math.PI * 2
+      const speed = 8 + Math.random() * 12
+      const particle: Particle = {
+        x: centerX,
+        y: centerY,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 0,
+        maxLife: 60 + Math.random() * 40,
+        color: this.getTetrisExplosionColor(),
+        size: 3 + Math.random() * 4,
+        alpha: 1,
+        rotation: angle,
+        rotationSpeed: (Math.random() - 0.5) * 0.4,
+        sparkLength: 20 + Math.random() * 30,
+        sparkWidth: 3 + Math.random() * 2
+      }
+      this.particles.push(particle)
+    }
+
+    // SHOCKWAVE RING
+    for (let i = 0; i < 40; i++) {
+      const angle = (i / 40) * Math.PI * 2
+      const speed = 15 + Math.random() * 8
+      const particle: Particle = {
+        x: centerX,
+        y: centerY,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 0,
+        maxLife: 80,
+        color: 0xffffff,
+        size: 2,
+        alpha: 1,
+        rotation: angle,
+        rotationSpeed: 0,
+        sparkLength: 40 + Math.random() * 20,
+        sparkWidth: 4
+      }
+      this.particles.push(particle)
+    }
+
+    // SECONDARY EXPLOSIONS (smaller bursts)
+    for (let burst = 0; burst < 8; burst++) {
+      const burstX = centerX + (Math.random() - 0.5) * boardWidth
+      const burstY = centerY + (Math.random() - 0.5) * boardHeight
+      
+      for (let i = 0; i < 15; i++) {
+        const angle = Math.random() * Math.PI * 2
+        const speed = 4 + Math.random() * 8
+        const particle: Particle = {
+          x: burstX,
+          y: burstY,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: Math.random() * 20, // Staggered start times
+          maxLife: 50 + Math.random() * 30,
+          color: this.getTetrisExplosionColor(),
+          size: 2 + Math.random() * 3,
+          alpha: 0.8,
+          rotation: angle,
+          rotationSpeed: (Math.random() - 0.5) * 0.3,
+          sparkLength: 12 + Math.random() * 18,
+          sparkWidth: 2
+        }
+        this.particles.push(particle)
+      }
+    }
+
+    // ASCENDING SPARKS (victory celebration)
+    for (let i = 0; i < 30; i++) {
+      const particle: Particle = {
+        x: centerX + (Math.random() - 0.5) * boardWidth * 0.8,
+        y: centerY + boardHeight * 0.3,
+        vx: (Math.random() - 0.5) * 6,
+        vy: -Math.random() * 15 - 5, // Always going up
+        life: 0,
+        maxLife: 100 + Math.random() * 50,
+        color: this.getTetrisExplosionColor(),
+        size: 1 + Math.random() * 2,
+        alpha: 1,
+        rotation: Math.random() * Math.PI * 2,
+        rotationSpeed: (Math.random() - 0.5) * 0.2,
+        sparkLength: 8 + Math.random() * 12,
+        sparkWidth: 1
+      }
+      this.particles.push(particle)
+    }
+
+    console.log('TETRIS EXPLOSION! Created', this.particles.length, 'particles')
+  }
+
+  private getTetrisExplosionColor(): number {
+    const tetrisColors = [
+      0xffffff, // Pure white
+      0xffff00, // Bright yellow
+      0xff8800, // Bright orange  
+      0xff0088, // Hot pink
+      0x8800ff, // Purple
+      0x0088ff, // Bright blue
+      0x00ff88, // Bright green
+      0xff4444, // Bright red
+      0x44ff44, // Bright lime
+      0x4444ff  // Bright blue
+    ]
+    return tetrisColors[Math.floor(Math.random() * tetrisColors.length)]
+  }
+
 
   public update() {
     // Update all particles

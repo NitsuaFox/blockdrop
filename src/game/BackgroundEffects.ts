@@ -14,6 +14,14 @@ interface FloatingShape {
   type: 'circle' | 'triangle' | 'diamond' | 'hexagon'
   size: number
   pulsePhase: number
+  // Blast effect properties
+  originalX?: number
+  originalY?: number
+  originalVx?: number
+  originalVy?: number
+  isBlasted?: boolean
+  blastTime?: number
+  restoreStartTime?: number
 }
 
 
@@ -86,16 +94,68 @@ export class BackgroundEffects {
 
   private updateShapes(frequencyData: { bass: number; mid: number; treble: number; overall: number } | null) {
     this.shapes.forEach(shape => {
-      // Basic movement
-      shape.x += shape.vx
-      shape.y += shape.vy
-      shape.rotation += shape.rotationSpeed
+      // Handle blast effect
+      if (shape.isBlasted) {
+        shape.blastTime = (shape.blastTime || 0) + 1
+        
+        // Apply blast physics
+        shape.x += shape.vx
+        shape.y += shape.vy
+        shape.rotation += shape.rotationSpeed
+        
+        // Apply friction and gravity to blasted shapes
+        shape.vx *= 0.98
+        shape.vy *= 0.98
+        shape.vy += 0.2 // Gravity
+        
+        // Start restoration after delay
+        if (shape.blastTime > (shape.restoreStartTime || 120)) {
+          const restoreProgress = (shape.blastTime - (shape.restoreStartTime || 120)) / 120
+          const easeProgress = 1 - Math.pow(1 - Math.min(restoreProgress, 1), 3) // Ease out cubic
+          
+          // Restore position
+          if (shape.originalX !== undefined && shape.originalY !== undefined) {
+            shape.x = shape.x + (shape.originalX - shape.x) * easeProgress * 0.05
+            shape.y = shape.y + (shape.originalY - shape.y) * easeProgress * 0.05
+          }
+          
+          // Restore velocity
+          if (shape.originalVx !== undefined && shape.originalVy !== undefined) {
+            shape.vx = shape.vx + (shape.originalVx - shape.vx) * easeProgress * 0.05
+            shape.vy = shape.vy + (shape.originalVy - shape.vy) * easeProgress * 0.05
+          }
+          
+          // Restore rotation speed
+          shape.rotationSpeed *= (1 - easeProgress * 0.05)
+          
+          // Restore scale and alpha
+          shape.targetScale *= (1 - easeProgress * 0.02)
+          shape.alpha *= (1 - easeProgress * 0.02)
+          
+          // End blast effect when fully restored
+          if (restoreProgress >= 1) {
+            shape.isBlasted = false
+            shape.blastTime = undefined
+            shape.restoreStartTime = undefined
+            shape.originalX = undefined
+            shape.originalY = undefined
+            shape.originalVx = undefined
+            shape.originalVy = undefined
+            console.log('Shape restored to normal!')
+          }
+        }
+      } else {
+        // Normal movement for non-blasted shapes
+        shape.x += shape.vx
+        shape.y += shape.vy
+        shape.rotation += shape.rotationSpeed
+      }
 
       // Update pulse phase
       shape.pulsePhase += 0.05
 
-      // Enhanced audio-reactive scaling and movement
-      if (frequencyData) {
+      // Enhanced audio-reactive scaling and movement (skip for blasted shapes)
+      if (frequencyData && !shape.isBlasted) {
         const intensity = frequencyData.overall
         shape.targetScale = 0.4 + intensity * 2.0
         
@@ -146,25 +206,27 @@ export class BackgroundEffects {
       // Smooth scale interpolation
       shape.scale += (shape.targetScale - shape.scale) * 0.1
 
-      // Boundary wrapping
-      if (shape.x < -50) shape.x = this.screenWidth + 50
-      if (shape.x > this.screenWidth + 50) shape.x = -50
-      if (shape.y < -50) shape.y = this.screenHeight + 50
-      if (shape.y > this.screenHeight + 50) shape.y = -50
+      // Boundary wrapping (skip for blasted shapes to let them fly off screen)
+      if (!shape.isBlasted) {
+        if (shape.x < -50) shape.x = this.screenWidth + 50
+        if (shape.x > this.screenWidth + 50) shape.x = -50
+        if (shape.y < -50) shape.y = this.screenHeight + 50
+        if (shape.y > this.screenHeight + 50) shape.y = -50
 
-      // More frequent direction changes for more dynamic movement
-      if (Math.random() < 0.005) {
-        shape.vx += (Math.random() - 0.5) * 0.4
-        shape.vy += (Math.random() - 0.5) * 0.4
+        // More frequent direction changes for more dynamic movement
+        if (Math.random() < 0.005) {
+          shape.vx += (Math.random() - 0.5) * 0.4
+          shape.vy += (Math.random() - 0.5) * 0.4
+          
+          // Clamp velocity
+          shape.vx = Math.max(-1.5, Math.min(1.5, shape.vx))
+          shape.vy = Math.max(-1.5, Math.min(1.5, shape.vy))
+        }
         
-        // Clamp velocity
-        shape.vx = Math.max(-1.5, Math.min(1.5, shape.vx))
-        shape.vy = Math.max(-1.5, Math.min(1.5, shape.vy))
+        // Apply friction to prevent infinite acceleration
+        shape.vx *= 0.995
+        shape.vy *= 0.995
       }
-      
-      // Apply friction to prevent infinite acceleration
-      shape.vx *= 0.995
-      shape.vy *= 0.995
     })
   }
 
@@ -257,6 +319,42 @@ export class BackgroundEffects {
   }
 
 
+
+  public tetrisBlastAway(blastCenterX: number, blastCenterY: number) {
+    console.log('BLASTING AWAY background shapes!')
+    
+    this.shapes.forEach(shape => {
+      // Store original properties for restoration
+      shape.originalX = shape.x
+      shape.originalY = shape.y
+      shape.originalVx = shape.vx
+      shape.originalVy = shape.vy
+      shape.isBlasted = true
+      shape.blastTime = 0
+      shape.restoreStartTime = 120 + Math.random() * 60 // Start restoring after 2-3 seconds
+      
+      // Calculate blast direction and distance
+      const dx = shape.x - blastCenterX
+      const dy = shape.y - blastCenterY
+      const distance = Math.sqrt(dx * dx + dy * dy)
+      const normalizedDx = dx / (distance || 1)
+      const normalizedDy = dy / (distance || 1)
+      
+      // Apply massive blast force (inverse distance for stronger effect on closer shapes)
+      const blastForce = 25 + (500 / Math.max(distance, 50))
+      shape.vx = normalizedDx * blastForce * (0.8 + Math.random() * 0.4)
+      shape.vy = normalizedDy * blastForce * (0.8 + Math.random() * 0.4)
+      
+      // Add some chaos and spin
+      shape.vx += (Math.random() - 0.5) * 10
+      shape.vy += (Math.random() - 0.5) * 10
+      shape.rotationSpeed = (Math.random() - 0.5) * 0.8
+      
+      // Make them more visible during blast
+      shape.alpha = Math.min(0.8, shape.alpha * 3)
+      shape.targetScale = shape.scale * (2 + Math.random())
+    })
+  }
 
   public clear() {
     this.shapesContainer.removeChildren()

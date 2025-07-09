@@ -580,6 +580,26 @@ export class TetrisGame {
     }
   }
 
+  private createTetrisExplosion() {
+    console.log('🎆 TETRIS EXPLOSION TIME! 🎆')
+    
+    // Calculate explosion center (center of the game board)
+    const isMobile = this.app.screen.width <= 768
+    const blockSize = isMobile ? this.MOBILE_BLOCK_SIZE : this.BLOCK_SIZE
+    const boardCenterX = this.boardContainer.x + (this.BOARD_WIDTH * blockSize) / 2
+    const boardCenterY = this.boardContainer.y + (this.BOARD_HEIGHT * blockSize) / 2
+    const boardWidth = this.BOARD_WIDTH * blockSize
+    const boardHeight = this.BOARD_HEIGHT * blockSize
+    
+    // Create massive particle explosion
+    this.particleSystem.createTetrisExplosion(boardCenterX, boardCenterY, boardWidth, boardHeight)
+    
+    // Blast away background shapes
+    this.backgroundEffects.tetrisBlastAway(boardCenterX, boardCenterY)
+    
+    console.log('💥 BOOM! Particles exploded and background shapes blasted away!')
+  }
+
   private spawnNewPiece() {
     // Initialize queue if empty
     if (!this.nextPieces || this.nextPieces.length === 0) {
@@ -761,9 +781,10 @@ export class TetrisGame {
       this.level = Math.floor(this.lines / 10) + 1
       this.dropInterval = Math.max(50, 1000 - (this.level - 1) * 50)
       
-      // Play Tetris sound effect for 4-line clear
+      // TETRIS! - 4-line clear gets massive explosion
       if (linesCleared === 4) {
         this.playTetrisSound()
+        this.createTetrisExplosion()
       }
       
       this.updateUI()
@@ -875,7 +896,7 @@ export class TetrisGame {
       
       // Prevent default behavior for game controls
       const gameKeys = ['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp', 'KeyZ', 'Space', 'KeyX']
-      if (gameKeys.includes(e.code)) {
+      if (gameKeys.indexOf(e.code) !== -1) {
         e.preventDefault()
       }
       
