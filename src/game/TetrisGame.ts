@@ -215,7 +215,7 @@ export class TetrisGame {
     this.boardContainer = new Container()
     if (isMobile) {
       this.boardContainer.x = (this.app.screen.width - (this.BOARD_WIDTH * blockSize)) / 2
-      this.boardContainer.y = 60 // Move up more for mobile
+      this.boardContainer.y = 45 // Move up even more for mobile
     } else {
       this.boardContainer.x = (this.app.screen.width - (this.BOARD_WIDTH * blockSize)) / 2
       this.boardContainer.y = 120
