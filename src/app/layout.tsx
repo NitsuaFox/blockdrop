@@ -20,7 +20,10 @@ export default function RootLayout({
         touchAction: 'none',
         userSelect: 'none',
         WebkitUserSelect: 'none',
-        overscrollBehavior: 'none' // Prevent pull-to-refresh
+        overscrollBehavior: 'none', // Prevent pull-to-refresh
+        overflow: 'hidden', // Prevent scrollbars
+        height: '100vh', // Full viewport height
+        width: '100vw' // Full viewport width
       }}>
         {children}
       </body>

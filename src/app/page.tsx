@@ -58,13 +58,15 @@ export default function Home() {
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      minHeight: '100vh',
+      height: '100vh',
+      width: '100vw',
       backgroundColor: '#000',
       padding: '10px',
       overflow: 'hidden',
       touchAction: 'none', // Prevent pull-to-refresh
       userSelect: 'none', // Prevent text selection
-      WebkitUserSelect: 'none'
+      WebkitUserSelect: 'none',
+      boxSizing: 'border-box'
     }}>
       <div ref={gameRef} style={{
         maxWidth: '100%',

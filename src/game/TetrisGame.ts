@@ -546,11 +546,18 @@ export class TetrisGame {
     if (!this.moveSound) return
     
     try {
-      // Reset sound to beginning and play
-      this.moveSound.currentTime = 0
-      this.moveSound.play().catch(console.error)
+      // Clone the audio for overlapping sounds on mobile
+      const soundClone = this.moveSound.cloneNode() as HTMLAudioElement
+      soundClone.volume = 0.4
+      soundClone.play().catch(console.error)
     } catch (error) {
-      console.log('Could not play move sound effect:', error)
+      // Fallback to original method
+      try {
+        this.moveSound.currentTime = 0
+        this.moveSound.play().catch(console.error)
+      } catch (fallbackError) {
+        console.log('Could not play move sound effect:', fallbackError)
+      }
     }
   }
 
@@ -558,11 +565,18 @@ export class TetrisGame {
     if (!this.rotateSound) return
     
     try {
-      // Reset sound to beginning and play
-      this.rotateSound.currentTime = 0
-      this.rotateSound.play().catch(console.error)
+      // Clone the audio for overlapping sounds on mobile
+      const soundClone = this.rotateSound.cloneNode() as HTMLAudioElement
+      soundClone.volume = 0.4
+      soundClone.play().catch(console.error)
     } catch (error) {
-      console.log('Could not play rotate sound effect:', error)
+      // Fallback to original method
+      try {
+        this.rotateSound.currentTime = 0
+        this.rotateSound.play().catch(console.error)
+      } catch (fallbackError) {
+        console.log('Could not play rotate sound effect:', fallbackError)
+      }
     }
   }
 
@@ -853,10 +867,17 @@ export class TetrisGame {
       // Music toggle works even when game is not running
       if (e.code === 'KeyM') {
         this.toggleMusic()
+        e.preventDefault()
         return
       }
       
       if (!this.gameRunning) return
+      
+      // Prevent default behavior for game controls
+      const gameKeys = ['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp', 'KeyZ', 'Space', 'KeyX']
+      if (gameKeys.includes(e.code)) {
+        e.preventDefault()
+      }
       
       switch (e.code) {
         case 'ArrowLeft':
@@ -910,12 +931,14 @@ export class TetrisGame {
     const leftButton = this.createTouchButton('←', 50, buttonY, buttonSize, 0x4444ff)
     leftButton.interactive = true
     leftButton.on('pointerdown', () => this.movePiece(-1, 0))
+    leftButton.on('touchstart', () => this.movePiece(-1, 0))
     buttonContainer.addChild(leftButton)
 
     // Right button
     const rightButton = this.createTouchButton('→', 150, buttonY, buttonSize, 0x4444ff)
     rightButton.interactive = true
     rightButton.on('pointerdown', () => this.movePiece(1, 0))
+    rightButton.on('touchstart', () => this.movePiece(1, 0))
     buttonContainer.addChild(rightButton)
 
     // Down button
@@ -926,18 +949,25 @@ export class TetrisGame {
         this.placePiece()
       }
     })
+    downButton.on('touchstart', () => {
+      if (!this.movePiece(0, 1)) {
+        this.placePiece()
+      }
+    })
     buttonContainer.addChild(downButton)
 
     // Rotate button
     const rotateButton = this.createTouchButton('↻', this.app.screen.width - 150, buttonY, buttonSize, 0xff4444)
     rotateButton.interactive = true
     rotateButton.on('pointerdown', () => this.rotatePiece(false))
+    rotateButton.on('touchstart', () => this.rotatePiece(false))
     buttonContainer.addChild(rotateButton)
 
     // Hard drop button
     const hardDropButton = this.createTouchButton('↕', this.app.screen.width - 50, buttonY, buttonSize, 0xff44ff)
     hardDropButton.interactive = true
     hardDropButton.on('pointerdown', () => this.hardDrop())
+    hardDropButton.on('touchstart', () => this.hardDrop())
     buttonContainer.addChild(hardDropButton)
 
     this.gameContainer.addChild(buttonContainer)
