@@ -15,10 +15,15 @@ export default function Home() {
     console.log('Initializing PixiJS application...')
 
     try {
-      // Initialize PixiJS application - Fixed size like before
+      // Calculate responsive dimensions for mobile
+      const isMobile = window.innerWidth <= 768
+      const gameWidth = isMobile ? Math.min(window.innerWidth - 20, 400) : 1200
+      const gameHeight = isMobile ? window.innerHeight - 100 : 800
+      
+      // Initialize PixiJS application - Responsive size
       const app = new Application({
-        width: 1200,
-        height: 800,
+        width: gameWidth,
+        height: gameHeight,
         backgroundColor: 0x0a0a0a,
         antialias: true
       })
@@ -54,9 +59,14 @@ export default function Home() {
       justifyContent: 'center',
       alignItems: 'center',
       minHeight: '100vh',
-      backgroundColor: '#000'
+      backgroundColor: '#000',
+      padding: '10px',
+      overflow: 'hidden'
     }}>
-      <div ref={gameRef} />
+      <div ref={gameRef} style={{
+        maxWidth: '100%',
+        maxHeight: '100%'
+      }} />
     </div>
   )
 }

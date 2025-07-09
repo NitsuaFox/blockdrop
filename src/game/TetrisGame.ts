@@ -192,6 +192,8 @@ export class TetrisGame {
       this.startGameLoop()
       console.log('Setting up controls...')
       this.setupControls()
+      console.log('Setting up touch controls...')
+      this.setupTouchControls()
       console.log('TetrisGame constructor completed')
     } catch (error) {
       console.error('Error in TetrisGame constructor:', error)
@@ -204,10 +206,18 @@ export class TetrisGame {
     this.gameContainer = new Container()
     this.app.stage.addChild(this.gameContainer)
     
-    // Board container - centered like before
+    // Check if mobile layout
+    const isMobile = this.app.screen.width <= 768
+    
+    // Board container - responsive positioning
     this.boardContainer = new Container()
-    this.boardContainer.x = (this.app.screen.width - (this.BOARD_WIDTH * this.BLOCK_SIZE)) / 2
-    this.boardContainer.y = 120
+    if (isMobile) {
+      this.boardContainer.x = (this.app.screen.width - (this.BOARD_WIDTH * this.BLOCK_SIZE)) / 2
+      this.boardContainer.y = 80
+    } else {
+      this.boardContainer.x = (this.app.screen.width - (this.BOARD_WIDTH * this.BLOCK_SIZE)) / 2
+      this.boardContainer.y = 120
+    }
     this.gameContainer.addChild(this.boardContainer)
     
     // Add title (after board container is created)
@@ -237,9 +247,15 @@ export class TetrisGame {
     
     // Next piece container (left side, aligned with game board)
     this.nextPieceContainer = new Container()
-    // Position one grid space left of the game board, aligned with top
-    this.nextPieceContainer.x = this.boardContainer.x - (4 * this.BLOCK_SIZE + this.BLOCK_SIZE) // 4 blocks wide + 1 block gap
-    this.nextPieceContainer.y = this.boardContainer.y
+    if (isMobile) {
+      // Position next pieces on the right side for mobile
+      this.nextPieceContainer.x = this.boardContainer.x + (this.BOARD_WIDTH * this.BLOCK_SIZE) + 10
+      this.nextPieceContainer.y = this.boardContainer.y
+    } else {
+      // Position one grid space left of the game board, aligned with top
+      this.nextPieceContainer.x = this.boardContainer.x - (4 * this.BLOCK_SIZE + this.BLOCK_SIZE) // 4 blocks wide + 1 block gap
+      this.nextPieceContainer.y = this.boardContainer.y
+    }
     this.gameContainer.addChild(this.nextPieceContainer)
     
     // Initialize particle system
@@ -255,9 +271,11 @@ export class TetrisGame {
   }
 
   private setupTitle() {
+    const isMobile = this.app.screen.width <= 768
+    
     // Main game title
     const titleText = new Text('BlockFall', {
-      fontSize: 48,
+      fontSize: isMobile ? 32 : 48,
       fill: 0xffffff,
       fontWeight: 'bold',
       dropShadow: true,
@@ -266,12 +284,12 @@ export class TetrisGame {
       dropShadowDistance: 3
     })
     titleText.x = this.app.screen.width / 2 - titleText.width / 2
-    titleText.y = 30
+    titleText.y = isMobile ? 20 : 30
     this.gameContainer.addChild(titleText)
     
     // Credit line under the game area
     const creditText = new Text('By AustinCreative.UK', {
-      fontSize: 16,
+      fontSize: isMobile ? 12 : 16,
       fill: 0xcccccc,
       fontWeight: 'normal',
       dropShadow: true,
@@ -280,7 +298,7 @@ export class TetrisGame {
       dropShadowDistance: 1
     })
     creditText.x = this.app.screen.width / 2 - creditText.width / 2
-    creditText.y = this.boardContainer.y + (this.BOARD_HEIGHT * this.BLOCK_SIZE) + 20
+    creditText.y = this.boardContainer.y + (this.BOARD_HEIGHT * this.BLOCK_SIZE) + (isMobile ? 10 : 20)
     this.gameContainer.addChild(creditText)
   }
 
@@ -337,11 +355,13 @@ export class TetrisGame {
   }
 
   private setupUI() {
-    const rightPanelX = this.boardContainer.x + (this.BOARD_WIDTH * this.BLOCK_SIZE) + 50
+    const isMobile = this.app.screen.width <= 768
+    const rightPanelX = isMobile ? 10 : this.boardContainer.x + (this.BOARD_WIDTH * this.BLOCK_SIZE) + 50
+    const startY = isMobile ? this.boardContainer.y + (this.BOARD_HEIGHT * this.BLOCK_SIZE) + 60 : 150
     
     // Score display
     const scoreText = new Text('SCORE: 0', {
-      fontSize: 28,
+      fontSize: isMobile ? 20 : 28,
       fill: 0xffffff,
       fontWeight: 'bold',
       dropShadow: true,
@@ -349,54 +369,54 @@ export class TetrisGame {
       dropShadowBlur: 10
     })
     scoreText.x = rightPanelX
-    scoreText.y = 150
+    scoreText.y = startY
     this.uiContainer.addChild(scoreText)
     
     // Level display
     const levelText = new Text('LEVEL: 1', {
-      fontSize: 28,
+      fontSize: isMobile ? 20 : 28,
       fill: 0xffffff,
       fontWeight: 'bold',
       dropShadow: true,
       dropShadowColor: 0x00ffff,
       dropShadowBlur: 10
     })
-    levelText.x = rightPanelX
-    levelText.y = 200
+    levelText.x = isMobile ? rightPanelX + 120 : rightPanelX
+    levelText.y = isMobile ? startY : startY + 50
     this.uiContainer.addChild(levelText)
     
     // Lines display
     const linesText = new Text('LINES: 0', {
-      fontSize: 28,
+      fontSize: isMobile ? 20 : 28,
       fill: 0xffffff,
       fontWeight: 'bold',
       dropShadow: true,
       dropShadowColor: 0x00ffff,
       dropShadowBlur: 10
     })
-    linesText.x = rightPanelX
-    linesText.y = 250
+    linesText.x = isMobile ? rightPanelX + 240 : rightPanelX
+    linesText.y = isMobile ? startY : startY + 100
     this.uiContainer.addChild(linesText)
 
     // Music control hint
     const musicText = new Text('M: Toggle Music', {
-      fontSize: 18,
+      fontSize: isMobile ? 14 : 18,
       fill: 0xcccccc,
       fontWeight: 'bold'
     })
     musicText.x = rightPanelX
-    musicText.y = 300
+    musicText.y = isMobile ? startY + 40 : startY + 150
     this.uiContainer.addChild(musicText)
     
-    // Controls info
-    const controlsText = new Text('CONTROLS:\nArrows: Move\nZ/Space: Rotate CCW\nX: Rotate CW\nUp: Hard Drop', {
-      fontSize: 16,
+    // Controls info - different for mobile
+    const controlsText = new Text(isMobile ? 'Tap controls below' : 'CONTROLS:\nArrows: Move\nZ/Space: Rotate CCW\nX: Rotate CW\nUp: Hard Drop', {
+      fontSize: isMobile ? 14 : 16,
       fill: 0x888888,
       fontWeight: 'bold',
       lineHeight: 20
     })
     controlsText.x = rightPanelX
-    controlsText.y = 350
+    controlsText.y = isMobile ? startY + 65 : startY + 200
     this.uiContainer.addChild(controlsText)
   }
 
@@ -789,6 +809,82 @@ export class TetrisGame {
     })
   }
 
+  private setupTouchControls() {
+    const isMobile = this.app.screen.width <= 768
+    if (!isMobile) return
+
+    // Create touch control buttons
+    const buttonContainer = new Container()
+    const buttonY = this.app.screen.height - 100
+    const buttonSize = 60
+
+    // Left button
+    const leftButton = this.createTouchButton('←', 50, buttonY, buttonSize, 0x4444ff)
+    leftButton.interactive = true
+    leftButton.on('pointerdown', () => this.movePiece(-1, 0))
+    buttonContainer.addChild(leftButton)
+
+    // Right button
+    const rightButton = this.createTouchButton('→', 150, buttonY, buttonSize, 0x4444ff)
+    rightButton.interactive = true
+    rightButton.on('pointerdown', () => this.movePiece(1, 0))
+    buttonContainer.addChild(rightButton)
+
+    // Down button
+    const downButton = this.createTouchButton('↓', 250, buttonY, buttonSize, 0x44ff44)
+    downButton.interactive = true
+    downButton.on('pointerdown', () => {
+      if (!this.movePiece(0, 1)) {
+        this.placePiece()
+      }
+    })
+    buttonContainer.addChild(downButton)
+
+    // Rotate button
+    const rotateButton = this.createTouchButton('↻', this.app.screen.width - 150, buttonY, buttonSize, 0xff4444)
+    rotateButton.interactive = true
+    rotateButton.on('pointerdown', () => this.rotatePiece(false))
+    buttonContainer.addChild(rotateButton)
+
+    // Hard drop button
+    const hardDropButton = this.createTouchButton('↕', this.app.screen.width - 50, buttonY, buttonSize, 0xff44ff)
+    hardDropButton.interactive = true
+    hardDropButton.on('pointerdown', () => this.hardDrop())
+    buttonContainer.addChild(hardDropButton)
+
+    this.gameContainer.addChild(buttonContainer)
+  }
+
+  private createTouchButton(text: string, x: number, y: number, size: number, color: number): Container {
+    const button = new Container()
+    button.x = x - size / 2
+    button.y = y - size / 2
+
+    // Button background
+    const bg = new Graphics()
+    bg.beginFill(color, 0.7)
+    bg.drawRoundedRect(0, 0, size, size, 8)
+    bg.endFill()
+    
+    // Button border
+    bg.lineStyle(2, 0xffffff, 0.8)
+    bg.drawRoundedRect(2, 2, size - 4, size - 4, 6)
+    
+    button.addChild(bg)
+
+    // Button text
+    const buttonText = new Text(text, {
+      fontSize: 24,
+      fill: 0xffffff,
+      fontWeight: 'bold'
+    })
+    buttonText.x = (size - buttonText.width) / 2
+    buttonText.y = (size - buttonText.height) / 2
+    button.addChild(buttonText)
+
+    return button
+  }
+
   private startGameLoop() {
     console.log('Starting game loop...')
     let frameCount = 0
@@ -1077,7 +1173,6 @@ export class TetrisGame {
     
     // Gradient background that pulses with music
     const bgWidth = this.BOARD_WIDTH * this.BLOCK_SIZE + 40
-    const bgHeight = this.BOARD_HEIGHT * this.BLOCK_SIZE + 40
     const centerX = this.boardContainer.x + (this.BOARD_WIDTH * this.BLOCK_SIZE) / 2
     const centerY = this.boardContainer.y + (this.BOARD_HEIGHT * this.BLOCK_SIZE) / 2
     
